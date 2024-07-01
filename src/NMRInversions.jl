@@ -15,6 +15,8 @@ using HiGHS
 
 # Include the files 
 
+include("regularization.jl")
+include("svds.jl")
 include("inversions_1D.jl")
 include("inversions_2D.jl")
 include("data_import.jl")
@@ -27,6 +29,8 @@ T1 = inversion1D()
 T2 = inversion1D()
 D = inversion1D()
 T1T2 = inversion2D()
+
+export T1T2map
 
 end
 

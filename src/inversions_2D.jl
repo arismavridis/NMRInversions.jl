@@ -46,6 +46,7 @@ function inv_2D(svds::svdstruct, α::Number;
 
         end
 
+        α = α[end-1]
         f = f_star
         r = svds.g - svds.K * f
 
