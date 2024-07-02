@@ -9,13 +9,24 @@ struct invres2D
 end
 
 
-function inv_2D(svds::svdstruct, α::Number;
-    solver=:brd, aopt=:none, order=0, savedata=true)
+function invert(exptype::inversion2D,;kwargs...)
 
-    if aopt == :none
+    invert(exptype, import_spinsolve()... ;kwargs...)
+
+end
+
+
+function invert(
+    exptype::inversion2D, t_direct::AbstractVector, t_indirect::AbstractVector, Raw::AbstractMatrix;
+    α=0, rdir=(-5, 1, 100), rindir=(-5, 1, 100),
+    solver=:brd, aopt=:none, order=0, savedata::Bool=true, plot::Bool=true)
+
+    svds = svdcompress(exptype, t_direct, t_indirect, Raw, rdir=rdir, rindir=rindir)
+
+    if isa(α, Real)
         f, r = solve_tikhonov(svds.K, svds.g, α, solver=solver)
 
-    elseif aopt == :gcv
+    elseif α == :gcv
         s̃ = svds.s
         ñ = length(s̃)
 
@@ -68,12 +79,15 @@ function inv_2D(svds::svdstruct, α::Number;
         display("Data saved as inversion_results.txt")
     end
 
+    if plot == true
+        return select_peaks(joinpath(pwd(), "inversion_results.txt"))
+    end
+
     return f, r
 end
 
 
 function readresults(file::String=pick_file(pwd()))
-
 
     open(file) do io
 
@@ -96,11 +110,11 @@ function readresults(file::String=pick_file(pwd()))
     end
 end
 
+
+
 function select_peaks()
     select_peaks(pick_file(pwd()))
 end
-
-
 
 function select_peaks(file)
 
@@ -506,12 +520,11 @@ end
 
 
 
+# function T1T2map(dir=pick_folder(pwd()); lims=(-5, 1, -5, 1))
 
-function T1T2map(dir=pick_folder(pwd()); lims=(-5, 1, -5, 1))
+#     cd(dir)
+#     svds = svdcompress(spinsolve_preprocess(dir)..., rdir=(lims[1], lims[2], 100), rindir=(lims[3], lims[4], 100))
+#     f, r = inv_2D(svds, 1, solver=:brd, aopt=:gcv)
+#     select_peaks(dir * "\\inversion_results.txt")
 
-    cd(dir)
-    svds = svdcompress(spinsolve_preprocess(dir)..., rdir=(lims[1], lims[2], 100), rindir=(lims[3], lims[4], 100))
-    f, r = inv_2D(svds, 1, solver=:brd, aopt=:gcv)
-    select_peaks(dir * "\\inversion_results.txt")
-
-end
+# end

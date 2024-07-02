@@ -11,12 +11,9 @@ end
 
 
 
-
-
 # Compression of 2D data
-function svdcompress(t_direct::AbstractVector, t_indirect::AbstractVector, Raw::AbstractMatrix;
-    rdir=(-5, 1, 100), rindir=(-5, 1, 100), reducesize=false, picard=false)
-
+function svdcompress(exptype::inversion2D, t_direct::AbstractVector, t_indirect::AbstractVector, Raw::AbstractMatrix;
+    rdir=(-5, 1, 100), rindir=(-5, 1, 100), reducesize=false) 
     G = real(Raw)
     ## Determine SNR
     # σ_n is the STD of the latter half of the imaginary signal (former half might contain signal residues as well) 
@@ -32,9 +29,16 @@ function svdcompress(t_direct::AbstractVector, t_indirect::AbstractVector, Raw::
     x_direct = exp10.(range(rdir...)) # Range of direct dimension 
     x_indirect = exp10.(range(rindir...)) # Range of indirect dimension
 
+
     # Kernel functions
-    K1_func(t, T2) = exp(-t / T2) # Kernel equation
-    K2_func(t, T1) = 1 - 2 * exp(-t / T1) # Kernel equation
+    # K1_func(t, T2) = exp(-t / T2) # Kernel equation
+    # K2_func(t, T1) = 1 - 2 * exp(-t / T1) # Kernel equation
+
+    if exptype == IRCPMG 
+        K1_func = (t, T2) -> exp(-t / T2)
+        K2_func = (t, T1) -> 1 - 2 * exp(-t / T1)
+    
+    end
 
     # Generate Kernels
     K1 = K1_func.(t_direct, x_direct')
@@ -106,11 +110,6 @@ function svdcompress(t_direct::AbstractVector, t_indirect::AbstractVector, Raw::
     Ṽ₀ = V1t .* V2t
     K̃₀ = Diagonal(s̃) * Ṽ₀'
 
-    if picard == true
-        a = sortperm(s̃, rev=true)
-        p1 = scatter([s̃[a], abs.(g̃)[a], abs.(g̃ ./ s̃)[a]], yscale=:log10, label=["σ" "|U'g|" "|U'g|./σ"])
-        display(p1)
-    end
 
     return svdstruct(K̃₀, g̃, s̃, Ṽ₀, x_direct, x_indirect, sigma_n, SNR)
 end
@@ -124,6 +123,9 @@ function svdcompress(exptype::String, t::AbstractVector, g::AbstractVector; rdir
 
     elseif exptype == "T2"
         kernel_eq = (t, T) -> exp(-t / T)
+
+    elseif exptype == "D"
+        kernel_eq = (t, D) -> exp(-t / D)
 
     end
 

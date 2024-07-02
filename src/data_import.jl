@@ -1,3 +1,4 @@
+
 function import_1D(file=pick_file(pwd()))
     data = readdlm(file, ',')
     x = vec(data[:, 1])
@@ -39,7 +40,10 @@ function create_decay(exptype="T1", ;
     return t, signal
 end
 
-function spinsolve_preprocess(directory::String=pick_folder(pwd()))
+
+function import_spinsolve(directory::String=pick_folder(pwd()))
+
+    cd(directory)
 
     Raw = readdlm(directory * "\\T1IRT2.dat", ' ')
     if size(Raw, 2) == 1

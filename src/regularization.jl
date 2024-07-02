@@ -41,8 +41,6 @@ function hess(H, c, p=(α, data, K))
 end
 
 
-
-
 function solve_tikhonov(K::AbstractMatrix, g::AbstractVector, α; solver=:brd,order=0)
 
 

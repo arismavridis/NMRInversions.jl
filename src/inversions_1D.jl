@@ -7,7 +7,7 @@ struct invres1D
     alpha::Real
 end
 
-function invert(exptype::String, file::String=pick_file(pwd()); kwargs...)
+function invert(exptype::inversion1D, file::String=pick_file(pwd()); kwargs...)
 
     csvmatrix = readdlm(file, ',')
     x = csvmatrix[:, 1]
@@ -17,16 +17,19 @@ function invert(exptype::String, file::String=pick_file(pwd()); kwargs...)
 
 end
 
-function invert(exptype, x, y;
+function invert(exptype::inversion1D, x, y;
     lims=(-5, 1, 128),
     α=0, order=0, solver=:brd,
     savedata=false, saveplot=false)
 
-    if exptype == "T1"
+    if exptype == IR 
         kernel_eq = (t, T) -> 1 - 2 * exp(-t / T)
 
-    elseif exptype == "T2"
+    elseif exptype == CPMG 
         kernel_eq = (t, T) -> exp(-t / T)
+
+    elseif exptype == PFG
+        kernel_eq = (t, D) -> exp(-t / D)
 
     end
 
