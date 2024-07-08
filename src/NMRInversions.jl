@@ -34,6 +34,7 @@ export inversion2D
 include("regularization.jl")
 include("inversions_1D.jl")
 include("inversions_2D.jl")
+include("gui.jl")
 include("svds.jl")
 include("data_import.jl")
 

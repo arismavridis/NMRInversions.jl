@@ -43,16 +43,15 @@ end
 
 function import_spinsolve(directory::String=pick_folder(pwd()))
 
-    cd(directory)
+    Raw = readdlm(joinpath(directory , "T1IRT2.dat"), ' ')
 
-    Raw = readdlm(directory * "\\T1IRT2.dat", ' ')
     if size(Raw, 2) == 1
-        Raw = readdlm(directory * "\\T1IRT2.dat", ',')
+        Raw = readdlm(joinpath(directory ,"T1IRT2.dat"), ',')
     end
     Raw = transpose(complex.(Raw[:, 1:2:end], Raw[:, 2:2:end]))
 
     # Read experiment parameters
-    acqu = readdlm(directory * "\\acqu.par.bak")
+    acqu = readdlm(joinpath(directory , "acqu.par.bak"))
     n_echoes = acqu[21, 3]
     t_echo = acqu[12, 3] * 1e-6
     τ_steps = acqu[36, 3]
