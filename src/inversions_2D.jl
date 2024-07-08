@@ -19,7 +19,7 @@ end
 function invert(
     exptype::inversion2D, t_direct::AbstractVector, t_indirect::AbstractVector, Raw::AbstractMatrix;
     α=0, rdir=(-5, 1, 100), rindir=(-5, 1, 100),
-    solver=:brd, aopt=:none, order=0, savedata::Bool=true, plot::Bool=true)
+    solver=:brd, order=0, savedata::Bool=true, plot::Bool=true)
 
     svds = svdcompress(exptype, t_direct, t_indirect, Raw, rdir=rdir, rindir=rindir)
 
