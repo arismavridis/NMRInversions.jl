@@ -1,8 +1,4 @@
-function select_peaks()
-    select_peaks(pick_file(pwd()))
-end
-
-function select_peaks(file)
+function select_peaks(file::string = pick_file(pwd()))
 
     invres = readresults(file)
     dir = invres.dir
