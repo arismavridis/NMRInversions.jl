@@ -8,8 +8,6 @@ using Statistics
 using NativeFileDialog
 using PolygonOps
 using GLMakie
-# import RipQP
-# import QuadraticModels
 import JuMP
 import HiGHS
 import Optimization, OptimizationOptimJL
