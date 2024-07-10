@@ -1,7 +1,4 @@
 
-struct brd_solver <: tikhonov_solver end
-brd = brd_solver()
-export brd
 
 function minfun(c::AbstractVector, p=(α, data, K))
     G = copy(p[3])
@@ -24,49 +21,16 @@ end
 
 function solve_tikhonov(K::AbstractMatrix, g::AbstractVector, α::Real, solver::NMRInversions.brd_solver, order::Int=0)
 
-    optf = OptimizationFunction(minfun, grad=grad, hess=hess)
-    prob = OptimizationProblem(optf, ones(size(K, 1)), (α, g, K))
-    c = OptimizationOptimJL.solve(prob, NewtonTrustRegion(), x_tol=1e-8, maxiters=5000, maxtime=100)
+    optf = Optimization.OptimizationFunction(minfun, grad=grad, hess=hess)
+    prob = Optimization.OptimizationProblem(optf, ones(size(K, 1)), (α, g, K))
+    c = OptimizationOptimJL.solve(prob, OptimizationOptimJL.NewtonTrustRegion(), x_tol=1e-8, maxiters=5000, maxtime=100)
     f = vec(max.(0, (K' * c)))
     r = K * f - g
 
     return f, r
 
     # if solver == :ripqp
-    #     ## solve 0.5 xᵀ H x + cᵀx + c₀ 
-    #     ## s.t. Ax = b
-    #     ## r = Kf-g
-    #     ## x = [f;r]
-    #     ## [K I]x = [g] => Kf = g + r
-
-    #     b = g
-    #     m, n = size(K)
-    #     A = [sparse(K) I]
-    #     c = zeros(m + n)
-    #     lvar = [zeros(n); fill(-Inf, m)] # No bounds to residuals, f positive
-
-    #     H = [2*α*I spzeros(n, m);
-    #         spzeros(m, n) 2*I]
-
-    #     qm = QuadraticModel(c, H;
-    #         A=A,
-    #         lcon=b, ucon=b)
-    #     # lvar=lvar)
-
-    #     stats = ripqp(qm, display=false)
-
-    #     return stats.solution[1:n], stats.solution[n+1:n+m]  # f, r
-
     # elseif solver == :brd
-
-    #     optf = OptimizationFunction(minfun, grad=grad, hess=hess)
-    #     prob = OptimizationProblem(optf, ones(size(K, 1)), (α, g, K))
-    #     c = OptimizationOptimJL.solve(prob, NewtonTrustRegion(), x_tol=1e-8, maxiters=5000, maxtime=100)
-    #     f = vec(max.(0, (K' * c)))
-    #     r = K * f - g
-
-    #     return f, r
-
     # elseif solver == :HiGHSlp
 
     #     A = sparse([K; √(α) .* Γ(size(K, 2), order)])
