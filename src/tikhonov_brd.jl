@@ -1,5 +1,3 @@
-
-
 function minfun(c::AbstractVector, p=(α, data, K))
     G = copy(p[3])
     G[:, (p[3]'*c.<=0)] .= 0
