@@ -10,11 +10,12 @@ struct svdstruct
 end
 
 
-
 # Compression of 2D data
 function svdcompress(exptype::inversion2D, t_direct::AbstractVector, t_indirect::AbstractVector, Raw::AbstractMatrix;
     rdir=(-5, 1, 100), rindir=(-5, 1, 100), reducesize=false) 
+
     G = real(Raw)
+
     ## Determine SNR
     # σ_n is the STD of the latter half of the imaginary signal (former half might contain signal residues as well) 
     # sigma_n = mean(std((imag(Raw)[(round(Int64, (size(imag(Raw),1) / 2))):end, :]),dims=2))
@@ -31,8 +32,6 @@ function svdcompress(exptype::inversion2D, t_direct::AbstractVector, t_indirect:
 
 
     # Kernel functions
-    # K1_func(t, T2) = exp(-t / T2) # Kernel equation
-    # K2_func(t, T1) = 1 - 2 * exp(-t / T1) # Kernel equation
 
     if exptype == IRCPMG 
         K1_func = (t, T2) -> exp(-t / T2)
@@ -116,15 +115,15 @@ end
 
 
 
-function svdcompress(exptype::String, t::AbstractVector, g::AbstractVector; rdir=(-5, 1, 100))
+function svdcompress(exptype::inversion1D, t::AbstractVector, g::AbstractVector; rdir=(-5, 1, 100))
 
-    if exptype == "T1"
+    if exptype == IR 
         kernel_eq = (t, T) -> 1 - 2 * exp(-t / T)
 
-    elseif exptype == "T2"
+    elseif exptype == CPMG 
         kernel_eq = (t, T) -> exp(-t / T)
 
-    elseif exptype == "D"
+    elseif exptype == PFG 
         kernel_eq = (t, D) -> exp(-t / D)
 
     end
