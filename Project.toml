@@ -25,7 +25,6 @@ QuadraticModels = "f468eda6-eac5-11e8-05a5-ff9e497bcd19"
 
 [extensions]
 test_ext = "CSV"
-tikhonov_ipopt_ext = "Tulip"
 tikhonov_ripqp_ext = ["RipQP","QuadraticModels"]
 
 [compat]
