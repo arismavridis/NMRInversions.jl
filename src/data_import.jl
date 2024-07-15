@@ -104,6 +104,9 @@ function import_geospec(directory::String=pick_file(pwd()))
 
         data = readdlm(io,'\t',Float64,skipstart=2)
 
+        p = plot(data[:,1],data[:,3],label="real")
+        p = plot!(data[:,1],data[:,4],label="imaginary")
+        display(p)
         return data
     end
 
@@ -112,7 +115,7 @@ end
 
 function autophase(re, im)
 
-
+    
 
 end
 
