@@ -43,15 +43,15 @@ end
 
 function import_spinsolve(directory::String=pick_folder(pwd()))
 
-    Raw = readdlm(joinpath(directory , "T1IRT2.dat"), ' ')
+    Raw = readdlm(joinpath(directory, "T1IRT2.dat"), ' ')
 
     if size(Raw, 2) == 1
-        Raw = readdlm(joinpath(directory ,"T1IRT2.dat"), ',')
+        Raw = readdlm(joinpath(directory, "T1IRT2.dat"), ',')
     end
     Raw = transpose(complex.(Raw[:, 1:2:end], Raw[:, 2:2:end]))
 
     # Read experiment parameters
-    acqu = readdlm(joinpath(directory , "acqu.par.bak"))
+    acqu = readdlm(joinpath(directory, "acqu.par.bak"))
     n_echoes = acqu[21, 3]
     t_echo = acqu[12, 3] * 1e-6
     τ_steps = acqu[36, 3]
@@ -72,3 +72,48 @@ function import_spinsolve(directory::String=pick_folder(pwd()))
     return t_direct, t_indirect, Raw
 
 end
+
+function readresults(file::String=pick_file(pwd()))
+
+    open(file) do io
+
+        readuntil(io, "Pulse Sequence : ")
+        PulseSequence = readline(io)
+        readuntil(io, "SNR : ")
+        SNR = parse.(Float64, readline(io))
+        readuntil(io, "alpha : ")
+        α = parse.(Float64, readline(io))
+        readuntil(io, "Direct Dimension : ")
+        dir = parse.(Float64, split(readline(io), ','))
+        readuntil(io, "Indirect Dimension : ")
+        indir = parse.(Float64, split(readline(io), ','))
+        readuntil(io, "Inversion Results : ")
+        f = parse.(Float64, split(readline(io), ','))
+        readuntil(io, "Residuals : ")
+        r = parse.(Float64, split(readline(io), ','))
+
+        return invres2D(PulseSequence, dir, indir, f, r, SNR, α)
+    end
+end
+
+
+function import_geospec(directory::String=pick_file(pwd()))
+
+    open(directory) do io
+        readuntil(io,"[Data]")
+
+        data = readdlm(io,'\t',Float64,skipstart=2)
+
+        return data
+    end
+
+end
+
+
+function autophase(re, im)
+
+
+
+end
+
+

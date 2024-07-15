@@ -87,26 +87,5 @@ function invert(
 end
 
 
-function readresults(file::String=pick_file(pwd()))
 
-    open(file) do io
-
-        readuntil(io, "Pulse Sequence : ")
-        PulseSequence = readline(io)
-        readuntil(io, "SNR : ")
-        SNR = parse.(Float64, readline(io))
-        readuntil(io, "alpha : ")
-        α = parse.(Float64, readline(io))
-        readuntil(io, "Direct Dimension : ")
-        dir = parse.(Float64, split(readline(io), ','))
-        readuntil(io, "Indirect Dimension : ")
-        indir = parse.(Float64, split(readline(io), ','))
-        readuntil(io, "Inversion Results : ")
-        f = parse.(Float64, split(readline(io), ','))
-        readuntil(io, "Residuals : ")
-        r = parse.(Float64, split(readline(io), ','))
-
-        return invres2D(PulseSequence, dir, indir, f, r, SNR, α)
-    end
-end
 
