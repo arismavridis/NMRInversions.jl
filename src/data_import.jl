@@ -113,10 +113,35 @@ function import_geospec(directory::String=pick_file(pwd()))
 end
 
 
-function autophase(re, im)
 
+function autophase_entropy(R, I)
+
+    model = Model(HiGHS.Optimizer)
+
+
+    n = length(R)
+
+    @variable(model, phc0)
+    @variable(model, phc1)
+    @variable(model, ϕ)
+
+    @objective(model, Min, -sum(h .* ln.(h)))
+
+    @constraint(model, h .== abs(R))
+    @constrain(model, ϕ .== phc0 .+ phc1 .* collect(range(1,n) ./ n))
+
+    ϕ = value.(ϕ)
     
+    Rₙ .= R * cos(ϕ) - I * sin(ϕ) 
+    Iₙ .= I * cos(ϕ) + R * sin(ϕ) 
 
+    return Rₙ, Iₙ
 end
 
+function autophase_integral(R,I)
+
+    model = Model(HiGHS.Optimizer)
+    @variable(model, ϕ)
+
+end
 
