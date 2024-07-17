@@ -114,34 +114,33 @@ end
 
 
 
-function autophase_entropy(R, I)
+# function autophase_entropy(R, I)
 
-    model = Model(HiGHS.Optimizer)
+#     model = Model(HiGHS.Optimizer)
 
+#     n = length(R)
 
-    n = length(R)
+#     @variable(model, phc0)
+#     @variable(model, phc1)
+#     @variable(model, ϕ)
 
-    @variable(model, phc0)
-    @variable(model, phc1)
-    @variable(model, ϕ)
+#     @objective(model, Min, -sum(h .* ln.(h)))
 
-    @objective(model, Min, -sum(h .* ln.(h)))
+#     @constraint(model, h .== abs(R))
+#     @constrain(model, ϕ .== phc0 .+ phc1 .* collect(range(1,n) ./ n))
 
-    @constraint(model, h .== abs(R))
-    @constrain(model, ϕ .== phc0 .+ phc1 .* collect(range(1,n) ./ n))
-
-    ϕ = value.(ϕ)
+#     ϕ = value.(ϕ)
     
-    Rₙ .= R * cos(ϕ) - I * sin(ϕ) 
-    Iₙ .= I * cos(ϕ) + R * sin(ϕ) 
+#     Rₙ .= R * cos(ϕ) - I * sin(ϕ) 
+#     Iₙ .= I * cos(ϕ) + R * sin(ϕ) 
 
-    return Rₙ, Iₙ
-end
+#     return Rₙ, Iₙ
+# end
 
-function autophase_integral(R,I)
+# function autophase_integral(R,I)
 
-    model = Model(HiGHS.Optimizer)
-    @variable(model, ϕ)
+#     model = Model(HiGHS.Optimizer)
+#     @variable(model, ϕ)
 
-end
+# end
 

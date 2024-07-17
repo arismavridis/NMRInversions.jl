@@ -39,25 +39,26 @@ function invert(exptype::inversion1D, x, y;
     display("Regularization of order $(order).")
 
     b = y
-    # Conversion to standard form, copied from RegularizationTools
-    L = Γ(size(A, 2), order)
-    L⁺ = pinv(L)
-    p, n = size(L)
-    Iₙ = Matrix{Float64}(I, n, n)
-    Q, R = qr(L')
-    K0 = Q[:, p+1:end]
-    H, T = qr(A * K0)
-    H0 = H[:, 1:n-p]
-    K₀T⁻¹H₀ᵀ = K0 * T^-1 * H0'
-    L⁺ₐ = (Iₙ - K₀T⁻¹H₀ᵀ * A) * L⁺
-    Ā = A * L⁺ₐ
-    b̄ = b - A * K₀T⁻¹H₀ᵀ * b
+    ## Conversion to standard form, copied from RegularizationTools
+    # L = Γ(size(A, 2), order)
+    # L⁺ = pinv(L)
+    # p, n = size(L)
+    # Iₙ = Matrix{Float64}(I, n, n)
+    # Q, R = qr(L')
+    # K0 = Q[:, p+1:end]
+    # H, T = qr(A * K0)
+    # H0 = H[:, 1:n-p]
+    # K₀T⁻¹H₀ᵀ = K0 * T^-1 * H0'
+    # L⁺ₐ = (Iₙ - K₀T⁻¹H₀ᵀ * A) * L⁺
+    # Ā = A * L⁺ₐ
+    # b̄ = b - A * K₀T⁻¹H₀ᵀ * b
 
     # Solve
-    f, r = solve_tikhonov(Ā, b̄, α, solver=solver)
+    # f, r = solve_tikhonov(Ā, b̄, α, solver=solver)
+    f, r = solve_tikhonov(A, b, α , solver=solver)
 
     # Go back to general form
-    f = L⁺ * f + K₀T⁻¹H₀ᵀ * (b - A * L⁺ * f)
+    # f = L⁺ * f + K₀T⁻¹H₀ᵀ * (b - A * L⁺ * f)
 
 
     if savedata == true
