@@ -58,6 +58,7 @@ include("gui.jl")
 include("svds.jl")
 include("data_import.jl")
 include("tikhonov_brd.jl")
+include("tikhonov_jump.jl")
 
 
 function foo(a::NMRInversions.brd_solver=brd)
