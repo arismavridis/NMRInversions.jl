@@ -111,33 +111,75 @@ end
 
 
 
-# function autophase_entropy(R, I)
+function entropy(u::AbstractArray, p::Tuple)
 
-#     model = Model(HiGHS.Optimizer)
+    phc0 = u[1]
+    phc1 = u[2]
+    R⁰ = p[1]
+    I⁰ = p[2]
+    γ = p[3]
 
-#     n = length(R)
+    n = length(R⁰)
+    ϕ = phc0 .+ phc1 .* collect(range(1, n) ./ n)
 
-#     @variable(model, phc0)
-#     @variable(model, phc1)
-#     @variable(model, ϕ)
+    R = R⁰ .* cos.(ϕ) - I⁰ .* sin.(ϕ)
 
-#     @objective(model, Min, -sum(h .* ln.(h)))
+    h = abs.(diff(R)) ./ sum(abs.(diff(R)))
 
-#     @constraint(model, h .== abs(R))
-#     @constrain(model, ϕ .== phc0 .+ phc1 .* collect(range(1,n) ./ n))
+    return -sum(h .* log.(h)) + γ * sum((R .^ 2)[findall(x -> x < 0, R)])
 
-#     ϕ = value.(ϕ)
+end
+
+
+function minimize_entropy(Re, Im, γ)
+
+    optf = Optimization.OptimizationFunction(entropy)
+    prob = Optimization.OptimizationProblem(optf, [0.1, 0.1], (Re, Im, γ))# lb=[0.0001, 0.0001], ub=[2π, 2π])
+
+    uopt = OptimizationOptimJL.solve(prob, OptimizationOptimJL.SimulatedAnnealing())
+
+    n = length(Re)
+    ϕ = uopt[1] .+ uopt[2] .* collect(range(1, n) ./ n)
+
+    Rₙ = Re .* cos.(ϕ) - Im .* sin.(ϕ)
+    Iₙ = Im .* cos.(ϕ) + Re .* sin.(ϕ)
+
+    p = plot(a[:, 1], Rₙ, label="Real")
+    p = plot!(a[:, 1], Iₙ, label="Imaginary")
+    display(p)
+
+    return Rₙ, Iₙ
+
+end
+
+
+# Minimize the sum of squares of the imaginary Part
+# works okay, but it needs more info to determine orientation of decay
+function im_cost(u, p)
+   
+    Re = p[1]
+    Im = p[2]
+    ϕ = u[1]
+
+    Iₙ = Im .* cos(ϕ) + Re .* sin(ϕ)
+
+    return sum(Iₙ .^ 2)
     
-#     Rₙ .= R * cos(ϕ) - I * sin(ϕ) 
-#     Iₙ .= I * cos(ϕ) + R * sin(ϕ) 
+end
 
-#     return Rₙ, Iₙ
-# end
+function min_im_sumsquares(Re,Im)
 
-# function autophase_integral(R,I)
+    optf = Optimization.OptimizationFunction(im_cost)
+    prob = Optimization.OptimizationProblem(optf, [1.0], (Re, Im))# lb=[0.0001, 0.0001], ub=[2π, 2π])
 
-#     model = Model(HiGHS.Optimizer)
-#     @variable(model, ϕ)
+    ϕ = OptimizationOptimJL.solve(prob, OptimizationOptimJL.ParticleSwarm())
 
-# end
+    Rₙ = Re .* cos.(ϕ) - Im .* sin.(ϕ)
+    Iₙ = Im .* cos.(ϕ) + Re .* sin.(ϕ)
 
+    p = plot(a[:, 1], Rₙ, label="Real")
+    p = plot!(a[:, 1], Iₙ, label="Imaginary")
+    display(p)
+
+    
+end
