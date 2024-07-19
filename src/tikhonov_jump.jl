@@ -52,7 +52,11 @@ function solve_tikhonov(K::AbstractMatrix, g::AbstractVector, α::Real, solver::
 
     ## Method 1
     @variable(model, f[1:n] >= 0)
+<<<<<<< HEAD
     @objective(model, Min, sum((K * f .- g) .^ 2) + a * sum(abs.(f)))
+=======
+    @objective(model, Min, sum((K * f .- s) .^ 2) + a * sum(abs.(f)))
+>>>>>>> d91c22f436d08919efc57d216a3c464da74f9d3b
 
     ## Method 2
     # @variables(model, begin
