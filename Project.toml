@@ -29,6 +29,7 @@ test_ext = "CSV"
 tikhonov_ripqp_ext = ["RipQP", "QuadraticModels"]
 
 [compat]
+Ipopt = "1"
 julia = "1.9.0"
 
 [extras]
