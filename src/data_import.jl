@@ -167,46 +167,57 @@ function im_cost(u, p)
 
 end
 
-function min_im(Re, Im)
+
+
+
+function autophase(Re, Im)
+
+    ϕ_range = range(0, 2π, 2000)
+    Re_1st_value_different_ϕs = Re[1] .* cos.(ϕ_range) - Im[1] .* sin.(ϕ_range)
+    ϕ₀ = ϕ_range[argmax(Re_1st_value_different_ϕs)]
 
     optf = Optimization.OptimizationFunction(im_cost)
-    prob = Optimization.OptimizationProblem(optf, [1.0], (Re, Im), lb=[0.001], ub=[2π])
-
+    prob = Optimization.OptimizationProblem(optf, [ϕ₀], (Re, Im), lb=[ϕ₀ - 0.01], ub=[ϕ₀ + 0.01])
     ϕ = OptimizationOptimJL.solve(prob, OptimizationOptimJL.ParticleSwarm([0], [2π], 10))[1]
+
+    # cons(res, u, p) = (res .= p[1][1])
+    # optf = Optimization.OptimizationFunction(im_cost, Optimization.AutoForwardDiff(); cons=cons)
+    # prob = Optimization.OptimizationProblem(optf, [rand()], (Re, Im), lcons=[0.001], ucons=[(abs(Re[1]))])
+    # ϕ = OptimizationOptimJL.solve(prob, OptimizationOptimJL.IPNewton())[1]
 
     Rₙ = Re .* cos.(ϕ) - Im .* sin.(ϕ)
     Iₙ = Im .* cos.(ϕ) + Re .* sin.(ϕ)
 
-    p = plot(Rₙ, label="Corrected Real")
-    p = plot!(Iₙ, label="Corrected Imaginary")
     display("Phase corrected by $(ϕ) radians")
-    display(p)
-
+    p = plot([Rₙ,Iₙ])
     return p
-
 end
+
 
 
 function testcorrection()
     # Create real and imaginary parts
     Re = exp.(-range(1, 20, 1000)) + randn(1000) .* 0.001
-    Im = 0.3 .* exp.(-3 .* range(1, 20, 1000)) .* randn(1000) + randn(1000) .* 0.001
+    # Im = 0.3 .* exp.(-3 .* range(1, 20, 1000)) .* randn(1000) + randn(1000) .* 0.001
+    Im = randn(1000) .* 0.001
 
     # Import data
     # data = import_geospec("/otherdata/9847zg/stratum_nmr/plug9_IR.txt")
     # Re = data[:, 3]
     # Im = data[:, 4]
 
-    p1 = plot([Re,Im],label=["Original real" "Original Imaginary"])
+    p1 = plot([Re, Im], label=["Original real" "Original Imaginary"])
 
     # Get them out of phase
     ϕ = rand() * 2π
+    display("Signal dephased by $ϕ radians")
     Re = Re .* cos(ϕ) - Im .* sin(ϕ)
     Im = Im .* cos(ϕ) + Re .* sin(ϕ)
 
-    p2 = plot([Re,Im],label=["Dephased real" "Dephased Imaginary"])
+    p2 = plot([Re, Im], label=["Dephased real" "Dephased Imaginary"])
 
-    p3 = min_im(Re, Im)
-    display(plot(p1,p2,p3))
+    p3 = autophase(Re, Im)
+    display(plot(p1, p2, p3))
 
 end
+
