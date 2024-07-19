@@ -100,9 +100,9 @@ end
 function import_geospec(directory::String=pick_file(pwd()))
 
     open(directory) do io
-        readuntil(io,"[Data]")
+        readuntil(io, "[Data]")
 
-        data = readdlm(io,'\t',Float64,skipstart=2)
+        data = readdlm(io, '\t', Float64, skipstart=2)
 
         return data
     end
@@ -156,7 +156,7 @@ end
 # Minimize the sum of squares of the imaginary Part
 # works okay, but it needs more info to determine orientation of decay
 function im_cost(u, p)
-   
+
     Re = p[1]
     Im = p[2]
     ϕ = u[1]
@@ -164,22 +164,49 @@ function im_cost(u, p)
     Iₙ = Im .* cos(ϕ) + Re .* sin(ϕ)
 
     return sum(Iₙ .^ 2)
-    
+
 end
 
-function min_im_sumsquares(Re,Im)
+function min_im(Re, Im)
 
     optf = Optimization.OptimizationFunction(im_cost)
-    prob = Optimization.OptimizationProblem(optf, [1.0], (Re, Im))# lb=[0.0001, 0.0001], ub=[2π, 2π])
+    prob = Optimization.OptimizationProblem(optf, [1.0], (Re, Im), lb=[0.001], ub=[2π])
 
-    ϕ = OptimizationOptimJL.solve(prob, OptimizationOptimJL.ParticleSwarm())
+    ϕ = OptimizationOptimJL.solve(prob, OptimizationOptimJL.ParticleSwarm([0], [2π], 10))[1]
 
     Rₙ = Re .* cos.(ϕ) - Im .* sin.(ϕ)
     Iₙ = Im .* cos.(ϕ) + Re .* sin.(ϕ)
 
-    p = plot(a[:, 1], Rₙ, label="Real")
-    p = plot!(a[:, 1], Iₙ, label="Imaginary")
+    p = plot(Rₙ, label="Corrected Real")
+    p = plot!(Iₙ, label="Corrected Imaginary")
+    display("Phase corrected by $(ϕ) radians")
     display(p)
 
-    
+    return p
+
+end
+
+
+function testcorrection()
+    # Create real and imaginary parts
+    Re = exp.(-range(1, 20, 1000)) + randn(1000) .* 0.001
+    Im = 0.3 .* exp.(-3 .* range(1, 20, 1000)) .* randn(1000) + randn(1000) .* 0.001
+
+    # Import data
+    # data = import_geospec("/otherdata/9847zg/stratum_nmr/plug9_IR.txt")
+    # Re = data[:, 3]
+    # Im = data[:, 4]
+
+    p1 = plot([Re,Im],label=["Original real" "Original Imaginary"])
+
+    # Get them out of phase
+    ϕ = rand() * 2π
+    Re = Re .* cos(ϕ) - Im .* sin(ϕ)
+    Im = Im .* cos(ϕ) + Re .* sin(ϕ)
+
+    p2 = plot([Re,Im],label=["Dephased real" "Dephased Imaginary"])
+
+    p3 = min_im(Re, Im)
+    display(plot(p1,p2,p3))
+
 end

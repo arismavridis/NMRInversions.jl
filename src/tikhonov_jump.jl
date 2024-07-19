@@ -1,6 +1,8 @@
 
 import JuMP: @variable
+import JuMP: @variables
 import JuMP: @constraint
+import JuMP: @constraints
 import JuMP: @objective
 
 function solve_tikhonov(K::AbstractMatrix, g::AbstractVector, α::Real, solver::Symbol, order::Int=0)
@@ -41,3 +43,26 @@ end
 #     # optimize!(model)
 #     # @assert is_solved_and_feasible(model)
 #     # return value.(f), value.(r)
+
+
+function solve_tikhonov(K::AbstractMatrix, g::AbstractVector, α::Real, solver::jump_L1_solver, order::Int=0)
+
+    model = Model(Ipopt.Optimizer)
+    @variables(model, begin
+        f[1:n] >= 0
+        residuals[1:m]
+        l1_terms[1:n] >= 0
+    end)
+    @constraints(model, begin
+        residuals .== K * f .- g
+        l1_terms .>= f
+        l1_terms .>= -f
+    end)
+    @objective(model, Min, sum(residuals .^ 2) + α * sum(l1_terms))
+    optimize!(model)
+    # @assert is_solved_and_feasible(model)
+    value.(f)
+
+    return JuMP.value.(f), vec(K * JuMP.value.(f) .- g)
+
+end

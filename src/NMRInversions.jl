@@ -10,6 +10,7 @@ using PolygonOps
 using GLMakie
 import JuMP
 import HiGHS
+import Ipopt
 import Optimization, OptimizationOptimJL
 
 
@@ -48,7 +49,9 @@ struct ripqp_solver <: tikhonov_solver end
 ripqp = ripqp_solver()
 export ripqp
 
-
+struct jump_L1_solver <: tikhonov_solver end
+ipoptL1 = jump_L1_solver()
+export ipoptL1
 
 ## Include the package files 
 include("regularization.jl")
