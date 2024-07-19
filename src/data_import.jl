@@ -122,7 +122,7 @@ function entropy(u::AbstractArray, p::Tuple)
     n = length(R⁰)
     ϕ = phc0 .+ phc1 .* collect(range(1, n) ./ n)
 
-    R = R⁰ .* cos.(ϕ) - I⁰ .* sin.(ϕ)
+    R, _ = phase_shift(R⁰, I⁰, ϕ)
 
     h = abs.(diff(R)) ./ sum(abs.(diff(R)))
 
@@ -140,9 +140,8 @@ function minimize_entropy(Re, Im, γ)
 
     n = length(Re)
     ϕ = uopt[1] .+ uopt[2] .* collect(range(1, n) ./ n)
-
-    Rₙ = Re .* cos.(ϕ) - Im .* sin.(ϕ)
-    Iₙ = Im .* cos.(ϕ) + Re .* sin.(ϕ)
+    
+    Rₙ, Iₙ = phase_shift(Re, Im, ϕ)
 
     p = plot(a[:, 1], Rₙ, label="Real")
     p = plot!(a[:, 1], Iₙ, label="Imaginary")
@@ -153,53 +152,51 @@ function minimize_entropy(Re, Im, γ)
 end
 
 
-# Minimize the sum of squares of the imaginary Part
-# works okay, but it needs more info to determine orientation of decay
-function im_cost(u, p)
+function im_cost(u, p)  # sum of squares of the imaginary Part
 
     Re = p[1]
     Im = p[2]
     ϕ = u[1]
 
-    Iₙ = Im .* cos(ϕ) + Re .* sin(ϕ)
-
+    _, Iₙ = phase_shift(Re, Im, ϕ)
     return sum(Iₙ .^ 2)
 
 end
 
 
+function phase_shift(Re, Im, ϕ)
 
+    Re_new = Re .* cos(ϕ) - Im .* sin(ϕ)
+    Im_new = Im .* cos(ϕ) + Re .* sin(ϕ)
+
+    return Re_new, Im_new
+end
 
 function autophase(Re, Im)
 
-    ϕ_range = range(0, 2π, 2000)
-    Re_1st_value_different_ϕs = Re[1] .* cos.(ϕ_range) - Im[1] .* sin.(ϕ_range)
-    ϕ₀ = ϕ_range[argmax(Re_1st_value_different_ϕs)]
+    ϕ_range = range(0, 2π, 20000)
+    Re1_vs_φ = Re[1] .* cos.(ϕ_range) - Im[1] .* sin.(ϕ_range)
+    ϕ = ϕ_range[argmax(Re1_vs_φ)]
 
-    optf = Optimization.OptimizationFunction(im_cost)
-    prob = Optimization.OptimizationProblem(optf, [ϕ₀], (Re, Im), lb=[ϕ₀ - 0.01], ub=[ϕ₀ + 0.01])
-    ϕ = OptimizationOptimJL.solve(prob, OptimizationOptimJL.ParticleSwarm([0], [2π], 10))[1]
+    # optf = Optimization.OptimizationFunction(im_cost)
+    # prob = Optimization.OptimizationProblem(optf, [ϕ₀], (Re, Im), lb=[ϕ₀ - 0.1], ub=[ϕ₀ + 0.1])
+    # ϕ = OptimizationOptimJL.solve(prob, OptimizationOptimJL.ParticleSwarm([0], [2π], 10))[1]
 
     # cons(res, u, p) = (res .= p[1][1])
     # optf = Optimization.OptimizationFunction(im_cost, Optimization.AutoForwardDiff(); cons=cons)
     # prob = Optimization.OptimizationProblem(optf, [rand()], (Re, Im), lcons=[0.001], ucons=[(abs(Re[1]))])
     # ϕ = OptimizationOptimJL.solve(prob, OptimizationOptimJL.IPNewton())[1]
 
-    Rₙ = Re .* cos.(ϕ) - Im .* sin.(ϕ)
-    Iₙ = Im .* cos.(ϕ) + Re .* sin.(ϕ)
+    Rₙ, Iₙ = phase_shift(Re, Im, ϕ)
 
-    display("Phase corrected by $(ϕ) radians")
-    p = plot([Rₙ,Iₙ])
-    return p
+    return Rₙ, Iₙ, ϕ
 end
-
 
 
 function testcorrection()
     # Create real and imaginary parts
-    Re = exp.(-range(1, 20, 1000)) + randn(1000) .* 0.001
-    # Im = 0.3 .* exp.(-3 .* range(1, 20, 1000)) .* randn(1000) + randn(1000) .* 0.001
-    Im = randn(1000) .* 0.001
+    Re = exp.(-range(1, 20, 1000)) + randn(1000) .* 0.01
+    Im = randn(1000) .* 0.01
 
     # Import data
     # data = import_geospec("/otherdata/9847zg/stratum_nmr/plug9_IR.txt")
@@ -209,15 +206,24 @@ function testcorrection()
     p1 = plot([Re, Im], label=["Original real" "Original Imaginary"])
 
     # Get them out of phase
-    ϕ = rand() * 2π
-    display("Signal dephased by $ϕ radians")
-    Re = Re .* cos(ϕ) - Im .* sin(ϕ)
-    Im = Im .* cos(ϕ) + Re .* sin(ϕ)
-
+    ϕd = rand() * 2π
+    Re, Im = phase_shift(Re, Im, ϕd)
+    
     p2 = plot([Re, Im], label=["Dephased real" "Dephased Imaginary"])
+    
+    Rₙ, Iₙ, ϕc = autophase(Re, Im)
+    p3 = plot([Rₙ, Iₙ], label=["Corrected real" "Corrected Imaginary"])
 
-    p3 = autophase(Re, Im)
-    display(plot(p1, p2, p3))
+    ϕ_range = range(0, 2π, 20000)
+    Re1_vs_φ = Re[1] .* cos.(ϕ_range) - Im[1] .* sin.(ϕ_range)
+    Im_sum_vs_φ = [im_cost([ϕ], (Re, Im)) for ϕ in ϕ_range]
+
+    p4 = plot(ϕ_range, Re1_vs_φ, xlabel="ϕ", label="Re[1]")
+    p4 = plot!(ϕ_range, (Im_sum_vs_φ ./maximum(Im_sum_vs_φ)).*maximum(Re1_vs_φ) , xlabel="ϕ", label="sum(Im.^2)", legend=:topleft)
+    p4 = vline!(p4, [ϕc], label="corrected phase")
+    display(plot(p1, p2, p3, p4))
+
+    display("The correction error is $(2π - (ϕd + ϕc)) radians")
 
 end
 
