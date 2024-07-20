@@ -226,4 +226,3 @@ function testcorrection()
     display("The correction error is $(2π - (ϕd + ϕc)) radians")
 
 end
-
