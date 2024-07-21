@@ -15,46 +15,52 @@ import Optimization, OptimizationOptimJL
 
 
 ## The following are custom types for multiple dispatch purposes
-# Supported 1D experiment types 
-struct inversion1D end
-export inversion1D
 
-IR = inversion1D()
-export IR
-CPMG = inversion1D()
-export CPMG
-PFG = inversion1D()
-export PFG
+# Pulse sequences
+customtypes = Dict(
+    :IR => :inversion1D,
+    :CPMG => :inversion1D,
+    :PFG => :inversion1D,
+    :IRCPMG => :inversion2D
+)
 
-# Supported 2D experiment types
-struct inversion2D end
-export inversion2D
+for (v, t) in customtypes
+    eval(quote
 
-IRCPMG = inversion2D()
-export IRCPMG
+        struct $t end
+        export $t
+        $v = $t()
+        export $v
+    end
+    )
+end
+
 
 # Supported solvers (via extensions)
-abstract type tikhonov_solver end
-export tikhonov_solver
+abstract type regularization_solver end
+export regularization_solver
 
-struct brd_solver <: tikhonov_solver end
-brd = brd_solver()
-export brd
 
-struct ip_solver <: tikhonov_solver end
-IP = ip_solver()
-export IP
+reg_types = Dict(
+    :brd => :brd_solver,
+    :IP => :ip_solver,
+    :ripqp => :ripqp_solver,
+    :ipoptL1 => :jump_L1_solver
+)
 
-struct ripqp_solver <: tikhonov_solver end
-ripqp = ripqp_solver()
-export ripqp
+for (v, t) in reg_types
+    eval(quote
 
-struct jump_L1_solver <: tikhonov_solver end
-ipoptL1 = jump_L1_solver()
-export ipoptL1
+        struct $t <: regularization_solver end
+        $v = $t()
+        export $v
+    end
+    )
+end
+
 
 ## Include the package files 
-include("regularization.jl")
+include("misc.jl")
 include("inversions_1D.jl")
 include("inversions_2D.jl")
 include("gui.jl")
