@@ -54,8 +54,8 @@ function invert(exptype::inversion1D, x, y;
     # b̄ = b - A * K₀T⁻¹H₀ᵀ * b
 
     # Solve
-    # f, r = solve_tikhonov(Ā, b̄, α, solver=solver)
-    f, r = solve_tikhonov(A, b, α , solver=solver)
+    # f, r = solve_regularization(Ā, b̄, α, solver=solver)
+    f, r = solve_regularization(A, b, α , solver=solver)
 
     # Go back to general form
     # f = L⁺ * f + K₀T⁻¹H₀ᵀ * (b - A * L⁺ * f)

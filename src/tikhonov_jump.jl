@@ -5,7 +5,7 @@ import JuMP: @constraint
 import JuMP: @constraints
 import JuMP: @objective
 
-function solve_tikhonov(K::AbstractMatrix, g::AbstractVector, α::Real, solver::Symbol, order::Int=0)
+function solve_regularization(K::AbstractMatrix, g::AbstractVector, α::Real, solver::Symbol, order::Int=0)
 
     A = sparse([K; √(α) .* Γ(size(K, 2), order)])
     b = sparse([g; zeros(size(A, 1) - size(g, 1))])
@@ -45,7 +45,7 @@ end
 #     # return value.(f), value.(r)
 
 
-function solve_tikhonov(K::AbstractMatrix, g::AbstractVector, α::Real, solver::jump_L1_solver, order::Int=0)
+function solve_regularization(K::AbstractMatrix, g::AbstractVector, α::Real, solver::jump_L1_solver, order::Int=0)
 
     m, n = size(K)
     model = JuMP.Model(Ipopt.Optimizer)

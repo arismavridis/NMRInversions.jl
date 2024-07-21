@@ -24,7 +24,7 @@ function invert(
     svds = svdcompress(exptype, t_direct, t_indirect, Raw, rdir=rdir, rindir=rindir)
 
     if isa(α, Real)
-        f, r = solve_tikhonov(svds.K, svds.g, α, solver, order)
+        f, r = solve_regularization(svds.K, svds.g, α, solver, order)
 
     elseif α == :gcv
         s̃ = svds.s
@@ -40,7 +40,7 @@ function invert(
         while ~done
 
             display("Testing α = $(round(αₙ,digits=3))")
-            f, r = solve_tikhonov(svds.K, svds.g, αₙ, solver, order)
+            f, r = solve_regularization(svds.K, svds.g, αₙ, solver, order)
 
             push!(α, αₙ) # Add the just tested α to the array
             φₙ, αₙ = gcv_score(αₙ, r, svds.s, (svds.V' * f)) # Compute φ for current α, and also compute new α 

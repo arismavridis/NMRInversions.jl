@@ -1,3 +1,25 @@
+function create_kernel(exptype::inversion1D, x::Vector, X::Vector=exp10.(range(-5, 1, 100)))
+    if exptype == IR
+        kernel_eq = (t, T) -> 1 - 2 * exp(-t / T)
+    elseif exptype == CPMG
+        kernel_eq = (t, T) -> exp(-t / T)
+    elseif exptype == PFG
+        kernel_eq = (t, D) -> exp(-t / D)
+    end
+
+    return kernel_eq.(x, X')
+end
+
+function create_kernel(exptype::inversion2D, 
+    x_dir::Vector, x_indir::Vector,
+    X_dir::Vector=exp10.(range(-5, 1, 100)), X_indir::Vector=exp10.(range(-5, 1, 100)))
+
+    if exptype == IRCPMG
+
+    end
+
+end
+
 function gcv_score(α, r, s, x) # where r is the residuals of the solution and x=Ṽ₀'f
 
     ñ = length(s)

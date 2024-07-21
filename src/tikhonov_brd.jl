@@ -17,7 +17,7 @@ function hessian_f(H, c, p=(α, data, K))
 end
 
 
-function solve_tikhonov(K::AbstractMatrix, g::AbstractVector, α::Real, solver::NMRInversions.brd_solver, order::Int=0)
+function solve_regularization(K::AbstractMatrix, g::AbstractVector, α::Real, solver::NMRInversions.brd_solver, order::Int=0)
 
     optf = Optimization.OptimizationFunction(objective_f, grad=gradient_f, hess=hessian_f)
     prob = Optimization.OptimizationProblem(optf, ones(size(K, 1)), (α, g, K))

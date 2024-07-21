@@ -23,15 +23,16 @@ customtypes = Dict(
     :PFG => :inversion1D,
     :IRCPMG => :inversion2D
 )
+struct inversion1D end
+struct inversion2D end
+export inversion1D, inversion2D
 
 for (v, t) in customtypes
-    eval(quote
-
-        struct $t end
-        export $t
-        $v = $t()
-        export $v
-    end
+    eval(
+        quote
+            $v = $t()
+            export $v
+        end
     )
 end
 
@@ -40,21 +41,21 @@ end
 abstract type regularization_solver end
 export regularization_solver
 
-
 reg_types = Dict(
     :brd => :brd_solver,
-    :IP => :ip_solver,
     :ripqp => :ripqp_solver,
+    :IP => :ip_solver,
     :ipoptL1 => :jump_L1_solver
+    :pdhgm => :pdhgm_solver
 )
 
 for (v, t) in reg_types
-    eval(quote
-
-        struct $t <: regularization_solver end
-        $v = $t()
-        export $v
-    end
+    eval(
+        quote
+            struct $t <: regularization_solver end
+            $v = $t()
+            export $v
+        end
     )
 end
 

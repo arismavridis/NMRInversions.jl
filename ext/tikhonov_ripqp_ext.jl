@@ -6,7 +6,7 @@ using QuadraticModels
 using SparseArrays
 using LinearAlgebra
 
-function NMRInversions.solve_tikhonov(K::AbstractMatrix, g::AbstractVector, α::Real, solver::NMRInversions.ripqp_solver, order::Int=0)
+function NMRInversions.solve_regularization(K::AbstractMatrix, g::AbstractVector, α::Real, solver::NMRInversions.ripqp_solver, order::Int=0)
 
     ## solve 0.5 xᵀ H x + cᵀx + c₀ 
     ## s.t. Ax = b
