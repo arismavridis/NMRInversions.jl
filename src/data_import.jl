@@ -161,14 +161,14 @@ function phase_shift(Re, Im, ϕ)
     return Re_new, Im_new
 end
 
-function autophase(Re, Im; maxre=false)
+function autophase(Re, Im; maxre1=false)
 
     ϕ_range = range(0, 2π, 500)
     Re1_vs_φ = Re[1] .* cos.(ϕ_range) - Im[1] .* sin.(ϕ_range)
 
-    if maxre == true
+    if maxre1 == true
         ϕ₀ = ϕ_range[argmax(Re1_vs_φ)]
-    elseif maxre == false
+    elseif maxre1 == false
         ϕ₀ = ϕ_range[argmin(Re1_vs_φ)]
     end
 
@@ -245,7 +245,7 @@ function import_geospec(directory::String=pick_file(pwd()))
     y_re = data[:, 3]
     y_im = data[:, 4]
 
-    y_re, y_im, ϕ = autophase(y_re, y_im, maxre=positive_start)
+    y_re, y_im, ϕ = autophase(y_re, y_im, maxre1=positive_start)
 
     display("Data phase corrected by $(round(ϕ,digits=3)) radians.")
 

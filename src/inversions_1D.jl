@@ -11,21 +11,47 @@ function invert(exptype::inversion1D, file::String=pick_file(pwd()); kwargs...)
 
     csvmatrix = readdlm(file, ',')
     x = csvmatrix[:, 1]
-    y = csvmatrix[:, 2]
+
+    if size(csvmatrix, 2) == 2
+        y = csvmatrix[:, 2]
+
+    elseif size(csvmatrix, 2) == 3  # If we got both real and imaginary data
+
+        if exptype in [IR, IRCPMG]
+            positive_start = false
+        else
+            positive_start = true
+        end
+
+        yre, yim, ϕ = autophase(csvmatrix[:, 2], csvmatrix[:, 3], maxre1=positive_start)
+        display("Data phase corrected by $(round(ϕ, digits=3)) radians.")
+
+        y = complex.(yre, yim)
+    else
+        error("The 1D experiment data file must have two or three columns.")
+    end
 
     invert(exptype, x, y; kwargs...)
 
 end
 
-function invert(exptype::inversion1D, x, y;
+
+function invert(exptype::inversion1D, x::AbstractArray, y::Vector{<:Complex};varargs...)
+
+
+    invert(exptype, x, y_re; varargs...)
+
+end
+
+function invert(exptype::inversion1D, x::AbstractArray, y::Vector{<:Real};
     lims=(-5, 1, 128),
     α=0, order=0, solver=brd,
     savedata=false, saveplot=false)
 
-    if exptype == IR 
+    if exptype == IR
         kernel_eq = (t, T) -> 1 - 2 * exp(-t / T)
 
-    elseif exptype == CPMG 
+    elseif exptype == CPMG
         kernel_eq = (t, T) -> exp(-t / T)
 
     elseif exptype == PFG
@@ -55,7 +81,7 @@ function invert(exptype::inversion1D, x, y;
 
     # Solve
     # f, r = solve_regularization(Ā, b̄, α, solver=solver)
-    f, r = solve_regularization(A, b, α , solver=solver, order=0)
+    f, r = solve_regularization(A, b, α, solver=solver, order=0)
 
     # Go back to general form
     # f = L⁺ * f + K₀T⁻¹H₀ᵀ * (b - A * L⁺ * f)
