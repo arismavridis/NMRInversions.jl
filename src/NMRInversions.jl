@@ -17,6 +17,7 @@ import Optimization, OptimizationOptimJL
 to do list:
 - Move the makie gui to extension
 - rename svd function to create_kernel, and make it more user friendly
+- add L curve method 
 
 """
 
@@ -68,11 +69,11 @@ end
 
 ## Include the package files 
 include("misc.jl")
+include("inversions_io.jl")
+include("svds.jl")
 include("inversions_1D.jl")
 include("inversions_2D.jl")
 include("gui.jl")
-include("svds.jl")
-include("data_import.jl")
 include("tikhonov_brd.jl")
 include("tikhonov_jump.jl")
 

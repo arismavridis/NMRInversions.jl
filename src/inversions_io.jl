@@ -92,7 +92,6 @@ function readresults(file::String=pick_file(pwd()))
         readuntil(io, "Residuals : ")
         r = parse.(Float64, split(readline(io), ','))
 
-        return invres2D(PulseSequence, dir, indir, f, r, SNR, α)
     end
 end
 
