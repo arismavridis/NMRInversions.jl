@@ -19,7 +19,7 @@ end
 
 function invert(exptype::inversion1D, x, y;
     lims=(-5, 1, 128),
-    α=0, order=0, solver=:brd,
+    α=0, order=0, solver=brd,
     savedata=false, saveplot=false)
 
     if exptype == IR 
@@ -55,7 +55,7 @@ function invert(exptype::inversion1D, x, y;
 
     # Solve
     # f, r = solve_regularization(Ā, b̄, α, solver=solver)
-    f, r = solve_regularization(A, b, α , solver=solver)
+    f, r = solve_regularization(A, b, α , solver=solver, order=0)
 
     # Go back to general form
     # f = L⁺ * f + K₀T⁻¹H₀ᵀ * (b - A * L⁺ * f)

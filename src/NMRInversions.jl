@@ -13,6 +13,12 @@ import HiGHS
 import Ipopt
 import Optimization, OptimizationOptimJL
 
+"""
+to do list:
+- Move the makie gui to extension
+- rename svd function to create_kernel, and make it more user friendly
+
+"""
 
 ## The following are custom types for multiple dispatch purposes
 
@@ -45,7 +51,7 @@ reg_types = Dict(
     :brd => :brd_solver,
     :ripqp => :ripqp_solver,
     :IP => :ip_solver,
-    :ipoptL1 => :jump_L1_solver
+    :ipoptL1 => :jump_L1_solver,
     :pdhgm => :pdhgm_solver
 )
 

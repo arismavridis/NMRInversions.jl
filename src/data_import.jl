@@ -97,17 +97,6 @@ function readresults(file::String=pick_file(pwd()))
 end
 
 
-function import_geospec(directory::String=pick_file(pwd()))
-
-    open(directory) do io
-        readuntil(io, "[Data]")
-
-        data = readdlm(io, '\t', Float64, skipstart=2)
-
-        return data
-    end
-
-end
 
 
 
@@ -140,7 +129,7 @@ function minimize_entropy(Re, Im, γ)
 
     n = length(Re)
     ϕ = uopt[1] .+ uopt[2] .* collect(range(1, n) ./ n)
-    
+
     Rₙ, Iₙ = phase_shift(Re, Im, ϕ)
 
     p = plot(a[:, 1], Rₙ, label="Real")
@@ -172,20 +161,24 @@ function phase_shift(Re, Im, ϕ)
     return Re_new, Im_new
 end
 
-function autophase(Re, Im)
+function autophase(Re, Im; maxre=false)
 
-    ϕ_range = range(0, 2π, 20000)
+    ϕ_range = range(0, 2π, 500)
     Re1_vs_φ = Re[1] .* cos.(ϕ_range) - Im[1] .* sin.(ϕ_range)
-    ϕ = ϕ_range[argmax(Re1_vs_φ)]
+
+    if maxre == true
+        ϕ₀ = ϕ_range[argmax(Re1_vs_φ)]
+    elseif maxre == false
+        ϕ₀ = ϕ_range[argmin(Re1_vs_φ)]
+    end
 
     # optf = Optimization.OptimizationFunction(im_cost)
-    # prob = Optimization.OptimizationProblem(optf, [ϕ₀], (Re, Im), lb=[ϕ₀ - 0.1], ub=[ϕ₀ + 0.1])
-    # ϕ = OptimizationOptimJL.solve(prob, OptimizationOptimJL.ParticleSwarm([0], [2π], 10))[1]
+    # prob = Optimization.OptimizationProblem(optf, [ϕ₀], (Re, Im), lb=[ϕ₀ - 0.1], ub=[ϕ₀ + 0.1],x_tol=1e-2)
+    # ϕ = OptimizationOptimJL.solve(prob, OptimizationOptimJL.ParticleSwarm())[1]
 
-    # cons(res, u, p) = (res .= p[1][1])
-    # optf = Optimization.OptimizationFunction(im_cost, Optimization.AutoForwardDiff(); cons=cons)
-    # prob = Optimization.OptimizationProblem(optf, [rand()], (Re, Im), lcons=[0.001], ucons=[(abs(Re[1]))])
-    # ϕ = OptimizationOptimJL.solve(prob, OptimizationOptimJL.IPNewton())[1]
+    optf = Optimization.OptimizationFunction(im_cost, Optimization.AutoForwardDiff())
+    prob = Optimization.OptimizationProblem(optf, [ϕ₀], (Re, Im), lb=[ϕ₀ - 0.1], ub=[ϕ₀ + 0.1],x_tol=1e-5)
+    ϕ = OptimizationOptimJL.solve(prob, OptimizationOptimJL.BFGS())[1]
 
     Rₙ, Iₙ = phase_shift(Re, Im, ϕ)
 
@@ -208,9 +201,9 @@ function testcorrection()
     # Get them out of phase
     ϕd = rand() * 2π
     Re, Im = phase_shift(Re, Im, ϕd)
-    
+
     p2 = plot([Re, Im], label=["Dephased real" "Dephased Imaginary"])
-    
+
     Rₙ, Iₙ, ϕc = autophase(Re, Im)
     p3 = plot([Rₙ, Iₙ], label=["Corrected real" "Corrected Imaginary"])
 
@@ -219,10 +212,52 @@ function testcorrection()
     Im_sum_vs_φ = [im_cost([ϕ], (Re, Im)) for ϕ in ϕ_range]
 
     p4 = plot(ϕ_range, Re1_vs_φ, xlabel="ϕ", label="Re[1]")
-    p4 = plot!(ϕ_range, (Im_sum_vs_φ ./maximum(Im_sum_vs_φ)).*maximum(Re1_vs_φ) , xlabel="ϕ", label="sum(Im.^2)", legend=:topleft)
+    p4 = plot!(ϕ_range, (Im_sum_vs_φ ./ maximum(Im_sum_vs_φ)) .* maximum(Re1_vs_φ), xlabel="ϕ", label="sum(Im.^2)", legend=:topleft)
     p4 = vline!(p4, [ϕc], label="corrected phase")
     display(plot(p1, p2, p3, p4))
 
     display("The correction error is $(2π - (ϕd + ϕc)) radians")
 
 end
+
+function import_geospec(directory::String=pick_file(pwd()))
+
+    data = []
+    pulse_sequence_number::Int16 = 0
+    dimensions = [0,0]
+
+    open(directory) do io
+
+        readuntil(io, "TestType=")
+        pulse_sequence_number = parse(Int16,readline(io))
+        readuntil(io, "Dimensions=")
+        dimensions .= parse.(Int16, split(readline(io), ','))
+        readuntil(io, "[Data]")
+        data = readdlm(io, '\t', Float64, skipstart=2)
+    end
+
+    if pulse_sequence_number in [7,106]
+        positive_start = false
+    else
+        positive_start = true
+    end
+
+    y_re = data[:, 3]
+    y_im = data[:, 4]
+
+    y_re, y_im, ϕ = autophase(y_re, y_im, maxre=positive_start)
+
+    display("Data phase corrected by $(round(ϕ,digits=3)) radians.")
+
+    if pulse_sequence_number in [106, 108, 110]
+        # Return xdir, xindir, raw data matrix
+        return data[1:dimensions[1],1], data[1:dimensions[1]:end,2], reshape(complex.(y_re, y_im),dimensions[1],dimensions[2])
+    else
+        # Return x and y data
+        return data[:, 1], complex.(y_re, y_im)
+        
+    end
+end
+
+@time a,b= import_geospec("/otherdata/9847zg/stratum_nmr/plug9_CPMG.txt") ;
+plot([y_re , y_im], label=["real" "imaginary"]) 
