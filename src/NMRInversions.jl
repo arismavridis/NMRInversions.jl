@@ -4,7 +4,6 @@ module NMRInversions
 using DelimitedFiles
 using LinearAlgebra
 using SparseArrays
-using Statistics
 using NativeFileDialog
 using PolygonOps
 using GLMakie
@@ -70,7 +69,7 @@ end
 ## Include the package files 
 include("misc.jl")
 include("inversions_io.jl")
-include("svds.jl")
+include("kernels.jl")
 include("inversions_1D.jl")
 include("inversions_2D.jl")
 include("gui.jl")
@@ -85,7 +84,7 @@ end
 
 # Export useful functions
 export invert
-export svdcompress
+export create_kernel
 export import_1D
 export import_spinsolve
 export select_peaks
