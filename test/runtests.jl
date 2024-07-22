@@ -1,6 +1,8 @@
 using NMRInversions
-using Test
+# using Test
 
-@testset "NMRInversions.jl" begin
-    # Write your tests here.
-end
+# @testset "NMRInversions.jl" begin
+#     # Write your tests here.
+    
+# end
+

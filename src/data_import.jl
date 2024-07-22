@@ -258,6 +258,3 @@ function import_geospec(directory::String=pick_file(pwd()))
         
     end
 end
-
-@time a,b= import_geospec("/otherdata/9847zg/stratum_nmr/plug9_CPMG.txt") ;
-plot([y_re , y_im], label=["real" "imaginary"]) 
