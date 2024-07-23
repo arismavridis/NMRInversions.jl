@@ -3,7 +3,7 @@ Create a kernel for the inversion of 1D data.
 x is the experiment x axis (time or b factor etc.)
 X is the range for the output x axis (T1, T2, D etc.)
 """
-function create_kernel(exptype::inversion1D, x::Vector, X::Vector=exp10.(range(-5, 1, 100)))
+function create_kernel(exptype::Type{<:inversion1D}, x::Vector, X::Vector=exp10.(range(-5, 1, 100)))
     if exptype == IR
         kernel_eq = (t, T) -> 1 - 2 * exp(-t / T)
     elseif exptype in [CPMG, PFG]
@@ -60,7 +60,7 @@ t_direct is the direct dimension acquisition parameter
 t_indirect is the indirect dimension acquisition parameter
 Raw is the 2D data matrix of complex data
 """
-function create_kernel(exptype::inversion2D, x_direct::AbstractVector, x_indirect::AbstractVector, Data::AbstractMatrix;
+function create_kernel(exptype::Type{<:inversion1D}, x_direct::AbstractVector, x_indirect::AbstractVector, Data::AbstractMatrix;
     rdir=(-5, 1, 100), rindir=(-5, 1, 100))
 
     G = real.(Data) 
@@ -106,7 +106,7 @@ end
 
 
 
-function create_kernel_svd(exptype::inversion1D, t::AbstractVector, g::AbstractVector; rdir=(-5, 1, 100))
+function create_kernel_svd(exptype::Type{<:inversion1D}, t::AbstractVector, g::AbstractVector; rdir=(-5, 1, 100))
 
     if exptype == IR
         kernel_eq = (t, T) -> 1 - 2 * exp(-t / T)

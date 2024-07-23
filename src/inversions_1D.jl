@@ -7,7 +7,7 @@ struct invres1D
     alpha::Real
 end
 
-function invert(exptype::inversion1D, file::String=pick_file(pwd()); kwargs...)
+function invert(exptype::Type{<:inversion1D}, file::String=pick_file(pwd()); kwargs...)
 
     csvmatrix = readdlm(file, ',')
     x = csvmatrix[:, 1]
@@ -36,13 +36,13 @@ function invert(exptype::inversion1D, file::String=pick_file(pwd()); kwargs...)
 end
 
 
-function invert(exptype::inversion1D, x::AbstractArray, y::Vector{<:Complex}; varargs...)
+function invert(exptype::Type{<:inversion1D}, x::AbstractArray, y::Vector{<:Complex}; varargs...)
 
     invert(exptype, x, y_re; varargs...)
 
 end
 
-function invert(exptype::inversion1D, x::AbstractArray, y::Vector{<:Real};
+function invert(exptype::Type{<:inversion1D}, x::AbstractArray, y::Vector{<:Real};
     lims=(-5, 1, 128),
     α=1, order=0, solver=brd,
     savedata=false, makeplot=false)

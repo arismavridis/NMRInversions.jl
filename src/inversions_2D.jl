@@ -9,15 +9,15 @@ struct invres2D
 end
 
 
-function invert(exptype::inversion2D,directory::String=pick_folder(pwd());kwargs...)
+function invert(exptype::Type{<:inversion2D}, directory::String=pick_folder(pwd()); kwargs...)
 
-    invert(exptype, import_spinsolve(directory)... ;kwargs...)
+    invert(exptype, import_spinsolve(directory)...; kwargs...)
 
 end
 
 
 function invert(
-    exptype::inversion2D, t_direct::AbstractVector, t_indirect::AbstractVector, Raw::AbstractMatrix;
+    exptype::Type{<:inversion2D}, t_direct::AbstractVector, t_indirect::AbstractVector, Raw::AbstractMatrix;
     α=:gcv, rdir=(-5, 1, 100), rindir=(-5, 1, 100),
     solver=brd, aopt=:none, order=0, savedata::Bool=true, plot::Bool=true)
 

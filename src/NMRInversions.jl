@@ -17,6 +17,10 @@ to do list:
 - Move the makie gui to extension
 - rename svd function to create_kernel, and make it more user friendly
 - add L curve method 
+- change multiple dispatch, from ::inversion1D to ::Type{inversion1D}, and use the stuct as input instead of defining variable with struct name
+abstract type A end
+struct a <: A end
+foo(a::Type{<:A})
 
 """
 
@@ -29,15 +33,16 @@ customtypes = Dict(
     :PFG => :inversion1D,
     :IRCPMG => :inversion2D
 )
-struct inversion1D end
-struct inversion2D end
+
+abstract type inversion1D end
+abstract type inversion2D end
 export inversion1D, inversion2D
 
-for (v, t) in customtypes
+for (a, A) in customtypes
     eval(
         quote
-            $v = $t()
-            export $v
+            struct $a <: $A end
+            export $a
         end
     )
 end
