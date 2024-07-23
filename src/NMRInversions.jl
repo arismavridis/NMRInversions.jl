@@ -4,7 +4,6 @@ module NMRInversions
 using DelimitedFiles
 using LinearAlgebra
 using SparseArrays
-using Statistics
 using NativeFileDialog
 using PolygonOps
 using GLMakie
@@ -16,13 +15,12 @@ import Optimization, OptimizationOptimJL
 """
 to do list:
 - Move the makie gui to extension
-- rename svd function to create_kernel, and make it more user friendly
 - add L curve method 
+- add SVD to 1D kernels, implement GCV for 1D inversion
 
 """
 
 ## The following are custom types for multiple dispatch purposes
-
 # Pulse sequences
 customtypes = Dict(
     :IR => :inversion1D,
@@ -30,38 +28,29 @@ customtypes = Dict(
     :PFG => :inversion1D,
     :IRCPMG => :inversion2D
 )
-struct inversion1D end
-struct inversion2D end
+
+abstract type inversion1D end
+abstract type inversion2D end
 export inversion1D, inversion2D
 
-for (v, t) in customtypes
+for (a, A) in customtypes
     eval(
         quote
-            $v = $t()
-            export $v
+            struct $a <: $A end
+            export $a
         end
     )
 end
 
-
-# Supported solvers (via extensions)
+# Supported solvers 
 abstract type regularization_solver end
 export regularization_solver
 
-reg_types = Dict(
-    :brd => :brd_solver,
-    :ripqp => :ripqp_solver,
-    :IP => :ip_solver,
-    :ipoptL1 => :jump_L1_solver,
-    :pdhgm => :pdhgm_solver
-)
-
-for (v, t) in reg_types
+for x in [:song, :ripqp, :pdhgm] 
     eval(
         quote
-            struct $t <: regularization_solver end
-            $v = $t()
-            export $v
+            struct $x <: regularization_solver end
+            export $x
         end
     )
 end
@@ -70,22 +59,18 @@ end
 ## Include the package files 
 include("misc.jl")
 include("inversions_io.jl")
-include("svds.jl")
+include("kernels.jl")
 include("inversions_1D.jl")
 include("inversions_2D.jl")
 include("gui.jl")
-include("tikhonov_brd.jl")
+include("tikhonov_song.jl")
 include("tikhonov_jump.jl")
 
-
-function foo(a::NMRInversions.brd_solver=brd)
-    display("type is brd_solver")
-end
 
 
 # Export useful functions
 export invert
-export svdcompress
+export create_kernel
 export import_1D
 export import_spinsolve
 export select_peaks
