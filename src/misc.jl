@@ -14,6 +14,7 @@ function gcv_score(α, r, s, x) # where r is the residuals of the solution and x
     return φₙ, αₙ
 end
 
+
 function Γ(m::Int, order::Int)
     # Eilers, P. H. C. (2003). Analytical Chemistry, 75(14), 3631–3636. (Supporting Information)
     # Taken from RegularizationTools.jl

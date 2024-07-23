@@ -11,15 +11,15 @@ end
 
 function invert(exptype::Type{<:inversion2D}, directory::String=pick_folder(pwd()); kwargs...)
 
-    invert(exptype, import_spinsolve(directory)...; kwargs...)
-
+    cd(directory)
+    invert(exptype, import_spinsolve(pwd())...; kwargs...)
 end
 
 
 function invert(
     exptype::Type{<:inversion2D}, t_direct::AbstractVector, t_indirect::AbstractVector, Raw::AbstractMatrix;
     α=:gcv, rdir=(-5, 1, 100), rindir=(-5, 1, 100),
-    solver=brd, aopt=:none, order=0, savedata::Bool=true, plot::Bool=true)
+    solver=song, aopt=:none, order=0, savedata::Bool=true, plot::Bool=true)
 
     svds = create_kernel(exptype, t_direct, t_indirect, Raw, rdir=rdir, rindir=rindir)
 

@@ -60,7 +60,7 @@ t_direct is the direct dimension acquisition parameter
 t_indirect is the indirect dimension acquisition parameter
 Raw is the 2D data matrix of complex data
 """
-function create_kernel(exptype::Type{<:inversion1D}, x_direct::AbstractVector, x_indirect::AbstractVector, Data::AbstractMatrix;
+function create_kernel(exptype::Type{<:inversion2D}, x_direct::AbstractVector, x_indirect::AbstractVector, Data::AbstractMatrix;
     rdir=(-5, 1, 100), rindir=(-5, 1, 100))
 
     G = real.(Data) 
@@ -105,43 +105,6 @@ function create_kernel(exptype::Type{<:inversion1D}, x_direct::AbstractVector, x
 end
 
 
-
-function create_kernel_svd(exptype::Type{<:inversion1D}, t::AbstractVector, g::AbstractVector; rdir=(-5, 1, 100))
-
-    if exptype == IR
-        kernel_eq = (t, T) -> 1 - 2 * exp(-t / T)
-
-    elseif exptype == CPMG
-        kernel_eq = (t, T) -> exp(-t / T)
-
-    elseif exptype == PFG
-        kernel_eq = (t, D) -> exp(-t / D)
-
-    end
-
-    T_range = exp10.(range(rdir...))
-    kernel = kernel_eq.(t, T_range')
-
-    usv = svd(kernel)
-
-    p1 = scatter([usv.S, abs.(usv.U' * g), abs.(usv.U' * g ./ usv.S)], yscale=:log10, label=["σ" "|U'g|" "|U'g|./σ"])
-
-    display(p1)
-
-    display("How many singular values do you want to keep? ")
-
-    i = parse(Int, readline())
-    # i = 15
-
-    # Truncate singular values after i 
-    s̃ = usv.S[1:i]
-    Ṽ = usv.V[:, 1:i]
-    K̃ = Diagonal(s̃) * Ṽ'
-    g̃ = usv.U[:, 1:i]' * g
-
-    return svdstruct(K̃, g̃, s̃, Ṽ, T_range, [], 0, 0)
-
-end
 
 ## Data compression
 

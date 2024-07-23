@@ -44,7 +44,7 @@ end
 
 function invert(exptype::Type{<:inversion1D}, x::AbstractArray, y::Vector{<:Real};
     lims=(-5, 1, 128),
-    α=1, order=0, solver=brd,
+    α=1, order=0, solver=song,
     savedata=false, makeplot=false)
 
     A = create_kernel(exptype, x, exp10.(range(lims...)))
