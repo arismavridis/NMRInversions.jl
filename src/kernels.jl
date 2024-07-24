@@ -1,9 +1,20 @@
+struct svd_kernel_struct
+    K::AbstractMatrix
+    g::AbstractVector
+    U::AbstractMatrix
+    S::AbstractVector
+    V::AbstractMatrix
+end
+
 """
 Create a kernel for the inversion of 1D data.
 x is the experiment x axis (time or b factor etc.)
 X is the range for the output x axis (T1, T2, D etc.)
+
+If data vector is provided, SVD is performed on the kernel.
+If data vector is complex, the SNR is calculated and the SVD is automatically truncated accordingly.
 """
-function create_kernel(exptype::Type{<:inversion1D}, x::Vector, X::Vector=exp10.(range(-5, 1, 100)))
+function create_kernel(exptype::Type{<:inversion1D}, x::Vector, X::Vector)
     if exptype == IR
         kernel_eq = (t, T) -> 1 - 2 * exp(-t / T)
     elseif exptype in [CPMG, PFG]
@@ -13,15 +24,37 @@ function create_kernel(exptype::Type{<:inversion1D}, x::Vector, X::Vector=exp10.
     return kernel_eq.(x, X')
 end
 
+function create_kernel(exptype::Type{<:inversion1D}, x::Vector, X::Vector, g::Vector{<:Real})
+    if exptype == IR
+        kernel_eq = (t, T) -> 1 - 2 * exp(-t / T)
+    elseif exptype in [CPMG, PFG]
+        kernel_eq = (t, T) -> exp(-t / T)
+    end
 
-struct svdstruct
-    K::AbstractMatrix
-    g::AbstractVector
-    s::AbstractVector
-    V::AbstractMatrix
-    x_dir::AbstractVector
-    x_indir::AbstractVector
-    SNR::AbstractFloat
+    usv = svd(kernel_eq.(x, X'))
+
+    K_new = Diagonal(usv.S) * usv.V'
+    g_new = usv.U' * g
+    
+    return svd_kernel_struct(K_new, g_new, usv.U, usv.S, usv.V)
+
+end
+
+function create_kernel(exptype::Type{<:inversion1D}, x::Vector, X::Vector, g::Vector{<:Complex})
+    if exptype == IR
+        kernel_eq = (t, T) -> 1 - 2 * exp(-t / T)
+    elseif exptype in [CPMG, PFG]
+        kernel_eq = (t, T) -> exp(-t / T)
+    end
+    
+    usv = svd(kernel_eq.(x, X'))
+    indices = findall(i -> i .> (1 / SNR), S21) # find elements in S12 above the noise threshold
+
+    K_new = Diagonal(usv.S) * usv.V'
+    g_new = usv.U' * g
+    
+    return svd_kernel_struct(K_new, g_new, usv.U, usv.S, usv.V)
+
 end
 
 """
@@ -30,24 +63,24 @@ where the real part is mostly signal and the imaginary part is mostly noise.
 σ_n is the STD of the latter half of the imaginary signal 
 (former half might contain signal residues as well) 
 """
-function calc_snr(data::AbstractMatrix{<:Complex})
+function calc_snr(data::AbstractMatrix{<:Complex}) # For matrix data
 
     real_data = real.(data)
     imag_data = imag.(data)
 
     noise = imag_data[(floor(Int64, (size(imag_data, 1) / 2))):end, :]
-    σ_n = sqrt(sum((noise .- sum(noise)/length(noise)) .^ 2) / (length(noise) - 1))
+    σ_n = sqrt(sum((noise .- sum(noise) / length(noise)) .^ 2) / (length(noise) - 1))
     SNR = maximum(abs.(real_data)) / σ_n
 
     return SNR
 end
-function calc_snr(data::AbstractVector{<:Complex})
+function calc_snr(data::AbstractVector{<:Complex}) # For vector data
 
     real_data = real.(data)
     imag_data = imag.(data)
 
     noise = imag_data[(floor(Int64, (size(imag_data, 1) / 2))):end]
-    σ_n = sqrt(sum((noise .- sum(noise)/length(noise)) .^ 2) / (length(noise) - 1))
+    σ_n = sqrt(sum((noise .- sum(noise) / length(noise)) .^ 2) / (length(noise) - 1))
     SNR = maximum(abs.(real_data)) / σ_n
 
     return SNR
@@ -60,20 +93,18 @@ t_direct is the direct dimension acquisition parameter
 t_indirect is the indirect dimension acquisition parameter
 Raw is the 2D data matrix of complex data
 """
-function create_kernel(exptype::Type{<:inversion2D}, x_direct::AbstractVector, x_indirect::AbstractVector, Data::AbstractMatrix;
-    rdir=(-5, 1, 100), rindir=(-5, 1, 100))
+function create_kernel(exptype::Type{<:inversion2D},
+    x_direct::AbstractVector, x_indirect::AbstractVector,
+    X_direct::AbstractVector, X_indirect::AbstractVector,
+    Data::AbstractMatrix{<:Complex})
 
-    G = real.(Data) 
-    ## Determine SNR
+    G = real.(Data)
     SNR = calc_snr(Data)
 
     if SNR < 1000
-        @warn("The SNR is $(round(SNR, digits=1)), which is below the recommended value of 1000. Consider running experiment with more scans.")
+        @warn("The SNR is $(round(SNR, digits=1)), which is below the recommended value of 1000. 
+            Consider running experiment with more scans.")
     end
-
-    # Kernel ranges
-    X_direct = exp10.(range(rdir...)) # Range of direct dimension 
-    X_indirect = exp10.(range(rindir...)) # Range of indirect dimension
 
     # Generate Kernels
     if exptype == IRCPMG
@@ -87,7 +118,7 @@ function create_kernel(exptype::Type{<:inversion2D}, x_direct::AbstractVector, x
 
     # finding which singular components are contributed from K1 and K2
     S21 = usv_indir.S * usv_dir.S' #Using outer product instead of Kronecker, to make indices more obvious
-    indices = findall(i -> i .> (1/SNR), S21) # find elements in S12 above the noise threshold
+    indices = findall(i -> i .> (1 / SNR), S21) # find elements in S12 above the noise threshold
     s̃ = S21[indices]
     ñ = length(s̃)
 
@@ -96,12 +127,14 @@ function create_kernel(exptype::Type{<:inversion2D}, x_direct::AbstractVector, x
 
     g̃ = diag(usv_indir.U[:, si]' * G' * usv_dir.U[:, sj])
 
+    Ũ₀ = Array{Float64}(undef, 0, 0) # change that to the actual U at some point, this is just a placeholder
+
     V1t = repeat(usv_dir.V[:, sj], size(usv_indir.V, 1), 1)
     V2t = reshape(repeat(usv_indir.V[:, si]', size(usv_dir.V, 1), 1), ñ, size(V1t, 1))'
     Ṽ₀ = V1t .* V2t
     K̃₀ = Diagonal(s̃) * Ṽ₀'
 
-    return svdstruct(K̃₀, g̃, s̃, Ṽ₀, X_direct, X_indirect,  SNR)
+    return svd_kernel_struct(K̃₀, g̃, Ũ₀, s̃, Ṽ₀)
 end
 
 
@@ -143,7 +176,7 @@ function compress_data(t_direct::AbstractVector, G::AbstractMatrix, bins::Int=64
     G = A * G # Replace old G with compressed one
 
     # sanity check plot:
+    usv1 = svd(sqrt(W0) * K1) #paper (13)
     # surface(G, camera=(110, 25), xscale=:log10)
 
-    usv1 = svd(sqrt(W0) * K1) #paper (13)
 end

@@ -17,17 +17,20 @@ end
 
 
 function invert(
-    exptype::Type{<:inversion2D}, t_direct::AbstractVector, t_indirect::AbstractVector, Raw::AbstractMatrix;
+    exptype::Type{<:inversion2D}, x_direct::AbstractVector, x_indirect::AbstractVector, Raw::AbstractMatrix;
     α=:gcv, rdir=(-5, 1, 100), rindir=(-5, 1, 100),
-    solver=song, aopt=:none, order=0, savedata::Bool=true, plot::Bool=true)
+    solver=song,  order=0, savedata::Bool=true, plot::Bool=true)
 
-    svds = create_kernel(exptype, t_direct, t_indirect, Raw, rdir=rdir, rindir=rindir)
+    X_direct = exp10.(range(rdir...))
+    X_indirect = exp10.(range(rindir...))
+
+    svds = create_kernel(exptype, x_direct, x_indirect, X_direct, X_indirect, Raw)
 
     if isa(α, Real)
         f, r = solve_regularization(svds.K, svds.g, α, solver, order)
 
     elseif α == :gcv
-        s̃ = svds.s
+        s̃ = svds.S
         ñ = length(s̃)
 
         #Initial guess (overestimate)
@@ -43,7 +46,7 @@ function invert(
             f, r = solve_regularization(svds.K, svds.g, αₙ, solver, order)
 
             push!(α, αₙ) # Add the just tested α to the array
-            φₙ, αₙ = gcv_score(αₙ, r, svds.s, (svds.V' * f)) # Compute φ for current α, and also compute new α 
+            φₙ, αₙ = gcv_score(αₙ, r, svds.S, (svds.V' * f)) # Compute φ for current α, and also compute new α 
             push!(φ, φₙ)
 
             if length(φ) > 1 && φ[end] < φ[end-1]
@@ -68,10 +71,10 @@ function invert(
     if savedata == true
         open("inversion_results.txt", "w") do io
             write(io, "Pulse Sequence : " * "IR-CPMG" * "\n")
-            write(io, "SNR : " * string(svds.SNR) * "\n")
+            write(io, "SNR : " * string(calc_snr(Raw)) * "\n")
             write(io, "alpha : " * string(α) * "\n")
-            write(io, "Direct Dimension : " * join(svds.x_dir, ", ") * "\n")
-            write(io, "Indirect Dimension : " * join(svds.x_indir, ", ") * "\n")
+            write(io, "Direct Dimension : " * join(X_direct, ", ") * "\n")
+            write(io, "Indirect Dimension : " * join(X_indirect, ", ") * "\n")
             write(io, "Inversion Results : " * join(f, ", ") * "\n")
             write(io, "Residuals : " * join(r, ", ") * "\n")
 

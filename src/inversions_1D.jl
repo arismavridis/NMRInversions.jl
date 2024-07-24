@@ -65,7 +65,7 @@ function invert(exptype::Type{<:inversion1D}, x::AbstractArray, y::Vector{<:Real
 
     end
 
-    return f
+    return f, r
 
 end
 

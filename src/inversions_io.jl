@@ -73,6 +73,7 @@ function import_spinsolve(directory::String=pick_folder(pwd()))
 
 end
 
+
 function readresults(file::String=pick_file(pwd()))
 
     open(file) do io

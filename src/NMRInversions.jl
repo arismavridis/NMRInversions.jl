@@ -55,6 +55,19 @@ for x in [:song, :ripqp, :pdhgm]
     )
 end
 
+# Supported methods to determine regularization α parameter
+abstract type smoothing_optimizer end
+export smoothing_optimizer
+
+for x in [:gcv, :brd, :lcurve] 
+    eval(
+        quote
+            struct $x <: smoothing_optimizer end
+            export $x
+        end
+    )
+end
+
 
 ## Include the package files 
 include("misc.jl")

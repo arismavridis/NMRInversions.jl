@@ -1,6 +1,11 @@
-
-
-function gcv_score(α, r, s, x) # where r is the residuals of the solution and x=Ṽ₀'f
+"""
+Compute the Generalized Cross Validation (GCV) score, 
+and return the score, as well as the next α to test. 
+In the inputs, r is the residuals of the solution, 
+s are the singular values of the kernel and x=Ṽ₀'f or x= s .* c 
+(look Mitchell 2012 paper https://doi.org/10.1016/j.pnmrs.2011.07.002)
+"""
+function gcv_score(α, r, s, x)  
 
     ñ = length(s)
     c = r ./ α
@@ -23,5 +28,3 @@ function Γ(m::Int, order::Int)
     end
     return diff(Γ(m, order - 1), dims=1)
 end
-
-
