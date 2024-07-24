@@ -70,9 +70,9 @@ end
 
 
 ## Include the package files 
-include("misc.jl")
 include("inversions_io.jl")
 include("kernels.jl")
+include("misc.jl")
 include("inversions_1D.jl")
 include("inversions_2D.jl")
 include("gui.jl")

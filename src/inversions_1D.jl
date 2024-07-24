@@ -36,21 +36,23 @@ function invert(exptype::Type{<:inversion1D}, file::String=pick_file(pwd()); kwa
 end
 
 
-function invert(exptype::Type{<:inversion1D}, x::AbstractArray, y::Vector{<:Complex}; varargs...)
 
-    invert(exptype, x, y_re; varargs...)
-
-end
-
-function invert(exptype::Type{<:inversion1D}, x::AbstractArray, y::Vector{<:Real};
-    lims=(-5, 1, 128),
-    α=1, order=0, solver=song,
+function invert(exptype::Type{<:inversion1D}, x::AbstractArray, y::Vector;
+    lims=(-5, 1, 128), α=1, order=0, solver=song,
     savedata=false, makeplot=false)
 
-    A = create_kernel(exptype, x, exp10.(range(lims...)))
-    b = y
+    if isa(α, Real)
 
-    f, r = solve_regularization(A, b, α, solver, order)
+        K = create_kernel(exptype, x, exp10.(range(lims...)))
+
+        f, r = solve_regularization(K, y, α, solver, order)
+
+    elseif α == gcv
+        ker_struct = create_kernel(exptype, x, exp10.(range(lims...)), y)
+
+        f, r = solve_gcv(ker_struct, solver, order)
+
+    end
 
     if savedata == true
         open("delim_file.txt", "w") do io
@@ -68,6 +70,7 @@ function invert(exptype::Type{<:inversion1D}, x::AbstractArray, y::Vector{<:Real
     return f, r
 
 end
+
 
 ## Conversion to standard form, copied from RegularizationTools
 # L = Γ(size(A, 2), order)

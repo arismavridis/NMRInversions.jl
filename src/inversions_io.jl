@@ -178,7 +178,7 @@ function autophase(Re, Im; maxre1=false)
     # ϕ = OptimizationOptimJL.solve(prob, OptimizationOptimJL.ParticleSwarm())[1]
 
     optf = Optimization.OptimizationFunction(im_cost, Optimization.AutoForwardDiff())
-    prob = Optimization.OptimizationProblem(optf, [ϕ₀], (Re, Im), lb=[ϕ₀ - 0.1], ub=[ϕ₀ + 0.1],x_tol=1e-5)
+    prob = Optimization.OptimizationProblem(optf, [ϕ₀], (Re, Im), lb=[ϕ₀ - 0.1], ub=[ϕ₀ + 0.1], x_tol=1e-5)
     ϕ = OptimizationOptimJL.solve(prob, OptimizationOptimJL.BFGS())[1]
 
     Rₙ, Iₙ = phase_shift(Re, Im, ϕ)
@@ -225,19 +225,19 @@ function import_geospec(directory::String=pick_file(pwd()))
 
     data = []
     pulse_sequence_number::Int16 = 0
-    dimensions = [0,0]
+    dimensions = [0, 0]
 
     open(directory) do io
 
         readuntil(io, "TestType=")
-        pulse_sequence_number = parse(Int16,readline(io))
+        pulse_sequence_number = parse(Int16, readline(io))
         readuntil(io, "Dimensions=")
         dimensions .= parse.(Int16, split(readline(io), ','))
         readuntil(io, "[Data]")
         data = readdlm(io, '\t', Float64, skipstart=2)
     end
 
-    if pulse_sequence_number in [7,106]
+    if pulse_sequence_number in [7, 106]
         positive_start = false
     else
         positive_start = true
@@ -250,12 +250,12 @@ function import_geospec(directory::String=pick_file(pwd()))
 
     display("Data phase corrected by $(round(ϕ,digits=3)) radians.")
 
-    if pulse_sequence_number in [106, 108, 110]
+    if pulse_sequence_number in [106, 108, 110] #2D experiments
         # Return xdir, xindir, raw data matrix
-        return data[1:dimensions[1],1], data[1:dimensions[1]:end,2], reshape(complex.(y_re, y_im),dimensions[1],dimensions[2])
-    else
+        return data[1:dimensions[1], 1], data[1:dimensions[1]:end, 2], reshape(complex.(y_re, y_im), dimensions[1], dimensions[2])
+
+    else                                        #1D experiments
         # Return x and y data
         return data[:, 1], complex.(y_re, y_im)
-        
     end
 end

@@ -50,10 +50,14 @@ function create_kernel(exptype::Type{<:inversion1D}, x::Vector, X::Vector, g::Ve
     usv = svd(kernel_eq.(x, X'))
     indices = findall(i -> i .> (1 / SNR), S21) # find elements in S12 above the noise threshold
 
-    K_new = Diagonal(usv.S) * usv.V'
-    g_new = usv.U' * g
+    U = usv.U[:, indices]
+    S = usv.S[indices]
+    V = usv.V[:, indices]
+
+    K_new = Diagonal(S) * V'
+    g_new = U' * real.(g)
     
-    return svd_kernel_struct(K_new, g_new, usv.U, usv.S, usv.V)
+    return svd_kernel_struct(K_new, g_new, U, S, V)
 
 end
 
@@ -136,7 +140,6 @@ function create_kernel(exptype::Type{<:inversion2D},
 
     return svd_kernel_struct(K̃₀, g̃, Ũ₀, s̃, Ṽ₀)
 end
-
 
 
 ## Data compression
