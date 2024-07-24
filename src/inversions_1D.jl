@@ -41,16 +41,17 @@ function invert(exptype::Type{<:inversion1D}, x::AbstractArray, y::Vector;
     lims=(-5, 1, 128), α=1, order=0, solver=song,
     savedata=false, makeplot=false)
 
+    X = exp10.(range(lims...))
     if isa(α, Real)
 
-        K = create_kernel(exptype, x, exp10.(range(lims...)))
+        K = create_kernel(exptype, x, X)
 
-        f, r = solve_regularization(K, y, α, solver, order)
+        f, r = solve_regularization(K, real.(y), α, solver, order)
 
     elseif α == gcv
-        ker_struct = create_kernel(exptype, x, exp10.(range(lims...)), y)
+        ker_struct = create_kernel(exptype, x, X, y)
 
-        f, r = solve_gcv(ker_struct, solver, order)
+        f, r , α = solve_gcv(ker_struct, solver, order)
 
     end
 

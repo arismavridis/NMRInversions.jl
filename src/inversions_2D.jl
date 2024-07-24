@@ -30,7 +30,7 @@ function invert(
         f, r = solve_regularization(ker_struct.K, ker_struct.g, α, solver, order)
 
     elseif α == gcv
-        f, r = solve_gcv(ker_struct, solver, order)
+        f, r , α= solve_gcv(ker_struct, solver, order)
 
     end
 

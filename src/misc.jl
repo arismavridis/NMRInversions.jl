@@ -73,5 +73,5 @@ function solve_gcv(svds::svd_kernel_struct, solver::Type{<:regularization_solver
     f = f_star
     r = svds.g - svds.K * f
 
-    return f, r
+    return f, r, α
 end
