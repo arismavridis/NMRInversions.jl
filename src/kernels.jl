@@ -48,7 +48,7 @@ function create_kernel(exptype::Type{<:inversion1D}, x::Vector, X::Vector, g::Ve
     end
     
     usv = svd(kernel_eq.(x, X'))
-    indices = findall(i -> i .> (1 / SNR), S21) # find elements in S12 above the noise threshold
+    indices = findall(i -> i .> (1 / SNR), usv.S) # find elements in S12 above the noise threshold
 
     U = usv.U[:, indices]
     S = usv.S[indices]

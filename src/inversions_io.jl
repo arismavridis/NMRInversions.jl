@@ -252,10 +252,10 @@ function import_geospec(directory::String=pick_file(pwd()))
 
     if pulse_sequence_number in [106, 108, 110] #2D experiments
         # Return xdir, xindir, raw data matrix
-        return data[1:dimensions[1], 1], data[1:dimensions[1]:end, 2], reshape(complex.(y_re, y_im), dimensions[1], dimensions[2])
+        return data[1:dimensions[1], 1], data[1:dimensions[1]:end, 2].* (1/1000), reshape(complex.(y_re, y_im), dimensions[1], dimensions[2])
 
     else                                        #1D experiments
         # Return x and y data
-        return data[:, 1], complex.(y_re, y_im)
+        return data[:, 1] .* (1/1000), complex.(y_re, y_im)
     end
 end

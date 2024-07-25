@@ -85,7 +85,7 @@ include("tikhonov_jump.jl")
 export invert
 export create_kernel
 export import_1D
-export import_spinsolve
+export import_spinsolve, import_geospec
 export select_peaks
 
 end
