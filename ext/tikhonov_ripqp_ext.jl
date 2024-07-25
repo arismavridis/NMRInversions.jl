@@ -6,7 +6,7 @@ using QuadraticModels
 using SparseArrays
 using LinearAlgebra
 
-function NMRInversions.solve_regularization(K::AbstractMatrix, g::AbstractVector, α::Real, solver::Type{ripqp}, order::Int=0)
+function NMRInversions.solve_regularization(K::AbstractMatrix, g::AbstractVector, α::Real, solver::Type{NMRInversions.ripqp}, order::Int=0)
 
     ## solve 0.5 xᵀ H x + cᵀx + c₀ 
     ## s.t. Ax = b
@@ -33,6 +33,16 @@ function NMRInversions.solve_regularization(K::AbstractMatrix, g::AbstractVector
     return stats.solution[1:n], stats.solution[n+1:n+m]  # f, r
 
 end
+
+function NMRInversions.foo()
+    println("Hello, World, updated!")
+end
+
+function NMRInversions.foo(a::Int)
+    println("sdfasdfa!")
+end
+
+
 
 
 end

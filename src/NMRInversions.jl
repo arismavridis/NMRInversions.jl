@@ -6,10 +6,9 @@ using LinearAlgebra
 using SparseArrays
 using NativeFileDialog
 using PolygonOps
-using GLMakie
+# using GLMakie
 import JuMP
 import HiGHS
-import Ipopt
 import Optimization, OptimizationOptimJL
 
 """
@@ -69,13 +68,31 @@ for x in [:gcv, :brd, :lcurve]
 end
 
 
+# The following functions are modified from extension files
+ext_functions = Dict(
+    :select_peaks => :GLMakie,
+    :pubfig => :GLMakie
+)
+
+for (a,b) in ext_functions 
+    eval(
+        quote
+            function $a()
+                @warn("The function $(string($a)) is only available after loading the $(string($b)) extension. \nDo that by typing 'using $(string($b))'")
+            end
+            export $a
+        end
+    )
+end
+
+
 ## Include the package files 
 include("inversions_io.jl")
 include("kernels.jl")
 include("misc.jl")
 include("inversions_1D.jl")
 include("inversions_2D.jl")
-include("gui.jl")
+# include("gui.jl")
 include("tikhonov_song.jl")
 include("tikhonov_jump.jl")
 
