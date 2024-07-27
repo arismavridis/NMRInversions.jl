@@ -250,11 +250,19 @@ function import_geospec(directory::String=pick_file(pwd()))
 
     display("Data phase corrected by $(round(ϕ,digits=3)) radians.")
 
-    if pulse_sequence_number in [106, 108, 110] #2D experiments
+    if pulse_sequence_number in [106, 110] #2D relaxation experiments
         # Return xdir, xindir, raw data matrix
+        return data[1:dimensions[1], 1].* (1/1000), data[1:dimensions[1]:end, 2].* (1/1000), reshape(complex.(y_re, y_im), dimensions[1], dimensions[2])
+
+    elseif pulse_sequence_number in [108] # D-T_2
+
         return data[1:dimensions[1], 1], data[1:dimensions[1]:end, 2].* (1/1000), reshape(complex.(y_re, y_im), dimensions[1], dimensions[2])
 
-    else                                        #1D experiments
+    elseif pulse_sequence_number in [105] #1D diffusion 
+        # Return x and y data
+        return data[:, 1] , complex.(y_re, y_im)
+
+    else                                        #1D relaxation experiments
         # Return x and y data
         return data[:, 1] .* (1/1000), complex.(y_re, y_im)
     end

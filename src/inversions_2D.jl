@@ -19,7 +19,7 @@ end
 function invert(
     exptype::Type{<:inversion2D}, x_direct::AbstractVector, x_indirect::AbstractVector, Raw::AbstractMatrix;
     α=gcv, rdir=(-5, 1, 100), rindir=(-5, 1, 100),
-    solver=song,  order=0, savedata::Bool=true, plot::Bool=true)
+    solver=song,  order=0, savedata::Bool=true, plot::Bool=false)
 
     X_direct = exp10.(range(rdir...))
     X_indirect = exp10.(range(rindir...))

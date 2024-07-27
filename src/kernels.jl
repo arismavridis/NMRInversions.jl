@@ -46,9 +46,12 @@ function create_kernel(exptype::Type{<:inversion1D}, x::Vector, X::Vector, g::Ve
     elseif exptype in [CPMG, PFG]
         kernel_eq = (t, T) -> exp(-t / T)
     end
-    
+   
+    SNR = calc_snr(g)
     usv = svd(kernel_eq.(x, X'))
     indices = findall(i -> i .> (1 / SNR), usv.S) # find elements in S12 above the noise threshold
+
+    display("SVD truncated to $(length(indices)) singular values out of $(length(usv.S))")
 
     U = usv.U[:, indices]
     S = usv.S[indices]
