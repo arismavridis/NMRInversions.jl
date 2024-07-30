@@ -50,8 +50,8 @@ function invert(
         display("Data saved as inversion_results.txt")
     end
 
-    if plot == true
-        return select_peaks(joinpath(pwd(), "inversion_results.txt"))
+    if plot == true && !isnothing(Base.get_extension(NMRInversions, :gui_ext))
+        return NMRInversions.select_peaks(joinpath(pwd(), "inversion_results.txt"))
     end
 
     return f, r

@@ -1,6 +1,10 @@
-function select_peaks(file::String = pick_file(pwd()))
+module gui_ext
 
-    invres = readresults(file)
+using NMRInversions, GLMakie, PolygonOps, LinearAlgebra
+
+function NMRInversions.select_peaks(file::String=pick_file(pwd()))
+
+    invres = NMRInversions.readresults(file)
     dir = invres.dir
     indir = invres.indir
     f = invres.f
@@ -34,7 +38,7 @@ function select_peaks(file::String = pick_file(pwd()))
     m = GridLayout(f[1, 1:2])
     n = GridLayout(f[2:3, 2])
     b = GridLayout(f[2, 1])
-    # ax3d = Axis3(n[1, 1])
+    ax3d = Axis3(n[1, 1])
 
     # Title textbox
     tb = Textbox(f[3, 1], placeholder="Insert a title for the plot, then press enter.",
@@ -72,7 +76,7 @@ function select_peaks(file::String = pick_file(pwd()))
     hidedecorations!(axtop)
     hidedecorations!(axright)
     hidedecorations!(axmain)
-    # hidedecorations!(ax3d)
+    hidedecorations!(ax3d)
 
     colgap!(m, 0)
     rowgap!(m, 0)
@@ -82,7 +86,7 @@ function select_peaks(file::String = pick_file(pwd()))
         empty!(axmain)
         empty!(axtop)
         empty!(axright)
-        # empty!(ax3d)
+        empty!(ax3d)
 
         # Static plots
         contourf!(axmain, z, colormap=:tempo, levels=50)
@@ -91,16 +95,16 @@ function select_peaks(file::String = pick_file(pwd()))
         # Plot diagonal line
         lines!(axmain, [(0, 0), (length(indir), length(dir))], color=:black, linewidth=1)
 
-        # surface!(ax3d, x, y, z, colormap=:tempo)
+        surface!(ax3d, x, y, z, colormap=:tempo)
 
         # Dynamic plots
         contourf!(axmain, spo, mode=:relative, levels=range(0.01, 1, 20), extendlow=:transparent, extendhigh=:transparent, colormap=:blues)
         lines!(axtop, indir_dist, colormap=:tab10, colorrange=(1, 10), color=8)
         lines!(axright, dir_dist, 1:length(dir), colormap=:tab10, colorrange=(1, 10), color=8)
 
-        # surface!(ax3d, x, y, spo, colormap=:blues,
-            # colorrange=(minimum(filter(x -> x != 0, vec(z))), maximum(z)),
-            # lowclip=:transparent)
+        surface!(ax3d, x, y, spo, colormap=:blues,
+        colorrange=(minimum(filter(x -> x != 0, vec(z))), maximum(z)),
+        lowclip=:transparent)
 
         # Plot the points in the selection vector
         scatter!(axmain, selection, colormap=:tab10, colorrange=(1, 10), color=8)
@@ -119,7 +123,7 @@ function select_peaks(file::String = pick_file(pwd()))
 
         if size(selection[], 1) > 2
             polygon[] = vcat(selection[], [selection[][1]])
-            mask[] = [inpolygon(p, polygon[]; in=1, on=1, out=0) for p in points]
+            mask[] = [PolygonOps.inpolygon(p, polygon[]; in=1, on=1, out=0) for p in points]
         end
 
     end
@@ -275,13 +279,11 @@ function select_peaks(file::String = pick_file(pwd()))
 
     on(exportb.clicks) do _
         if isnothing(tb.stored_string[])
-            pubfig(title="")
+            NMRInversions.pubfig(title="")
         else
-            pubfig(title=tb.stored_string[])
+            NMRInversions.pubfig(title=tb.stored_string[])
         end
     end
-
-
 
     reset_limits!(axmain)
     f
@@ -289,9 +291,9 @@ function select_peaks(file::String = pick_file(pwd()))
 end
 
 
-function pubfig(file="inversion_results.txt"; title="", ppu=2)
+function NMRInversions.pubfig(file="inversion_results.txt"; title="", ppu=2)
 
-    invres = readresults(file)
+    invres = NMRInversions.readresults(file)
     dir = invres.dir
     indir = invres.indir
     f = invres.f
@@ -397,5 +399,8 @@ function pubfig(file="inversion_results.txt"; title="", ppu=2)
     end
 
     Makie.save("Results.png", m, px_per_unit=ppu)
+
+end
+
 
 end

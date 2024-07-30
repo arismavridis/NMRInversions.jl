@@ -6,85 +6,44 @@ using LinearAlgebra
 using SparseArrays
 using NativeFileDialog
 using PolygonOps
-# using GLMakie
-import JuMP
-import HiGHS
 import Optimization, OptimizationOptimJL
 
 """
 to do list:
-- Move the makie gui to extension
 - add L curve method 
-- add SVD to 1D kernels, implement GCV for 1D inversion
-
+- add gcv for reci method
 """
 
 ## The following are custom types for multiple dispatch purposes
 # Pulse sequences
-customtypes = Dict(
-    :IR => :inversion1D,
-    :CPMG => :inversion1D,
-    :PFG => :inversion1D,
-    :IRCPMG => :inversion2D
-)
 
 abstract type inversion1D end
 abstract type inversion2D end
 export inversion1D, inversion2D
 
-for (a, A) in customtypes
-    eval(
-        quote
-            struct $a <: $A end
-            export $a
-        end
-    )
-end
+struct IR <: inversion1D end
+struct CPMG <: inversion1D end
+struct PFG <: inversion1D end
+struct IRCPMG <: inversion2D end
+export IR, CPMG, PFG, IRCPMG
 
 # Supported solvers 
 abstract type regularization_solver end
 export regularization_solver
 
-for x in [:song, :ripqp, :pdhgm] 
-    eval(
-        quote
-            struct $x <: regularization_solver end
-            export $x
-        end
-    )
-end
+struct song <: regularization_solver end
+struct ripqp <: regularization_solver end
+struct pdhgm <: regularization_solver end
+export song, ripqp, pdhgm
 
 # Supported methods to determine regularization α parameter
 abstract type smoothing_optimizer end
 export smoothing_optimizer
 
-for x in [:gcv, :brd, :lcurve] 
-    eval(
-        quote
-            struct $x <: smoothing_optimizer end
-            export $x
-        end
-    )
-end
-
-
-# The following functions are modified from extension files
-ext_functions = Dict(
-    :select_peaks => :GLMakie,
-    :pubfig => :GLMakie
-)
-
-for (a,b) in ext_functions 
-    eval(
-        quote
-            function $a()
-                @warn("The function $(string($a)) is only available after loading the $(string($b)) extension. \nDo that by typing 'using $(string($b))'")
-            end
-            export $a
-        end
-    )
-end
-
+struct gcv <: smoothing_optimizer end
+struct brd <: smoothing_optimizer end
+struct lcurve <: smoothing_optimizer end
+export gcv, brd, lcurve
 
 ## Include the package files 
 include("inversions_io.jl")
@@ -92,10 +51,8 @@ include("kernels.jl")
 include("misc.jl")
 include("inversions_1D.jl")
 include("inversions_2D.jl")
-# include("gui.jl")
 include("tikhonov_song.jl")
-include("tikhonov_jump.jl")
-
+include("L1_regularization.jl")
 
 
 # Export useful functions
@@ -103,6 +60,10 @@ export invert
 export create_kernel
 export import_1D
 export import_spinsolve, import_geospec
-export select_peaks
+
+# The following functions are modified from extension files
+function select_peaks end
+function pubfig end
+export select_peaks, pubfig
 
 end

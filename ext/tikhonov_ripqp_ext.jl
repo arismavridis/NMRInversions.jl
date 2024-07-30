@@ -34,14 +34,6 @@ function NMRInversions.solve_regularization(K::AbstractMatrix, g::AbstractVector
 
 end
 
-function NMRInversions.foo()
-    println("Hello, World, updated!")
-end
-
-function NMRInversions.foo(a::Int)
-    println("sdfasdfa!")
-end
-
 
 
 

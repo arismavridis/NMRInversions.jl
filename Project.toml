@@ -5,26 +5,24 @@ version = "1.0.0-DEV"
 
 [deps]
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
-GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
-HiGHS = "87dc4568-4c63-4d18-b0c0-bb2238e4078b"
-JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 NativeFileDialog = "e1fe445b-aa65-4df4-81c1-2041507f0fd4"
 Optimization = "7f7a1694-90dd-40f0-9382-eb1efda571ba"
 OptimizationOptimJL = "36348300-93cb-4f02-beb5-3c3902f8871e"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
-PolygonOps = "647866c9-e3ac-4575-94e7-e3d426903924"
-RipQP = "1e40b3f8-35eb-4cd8-8edd-3e515bb9de08"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+PolygonOps = "647866c9-e3ac-4575-94e7-e3d426903924"
 
 [weakdeps]
-CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
+JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
+GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
 QuadraticModels = "f468eda6-eac5-11e8-05a5-ff9e497bcd19"
 RipQP = "1e40b3f8-35eb-4cd8-8edd-3e515bb9de08"
-Tulip = "6dd1b50a-3aae-11e9-10b5-ef983d2400fa"
 
 [extensions]
+gui_ext = "GLMakie"
 tikhonov_ripqp_ext = ["RipQP", "QuadraticModels"]
+tikhonov_jump_ext = "JuMP"
 
 [compat]
 julia = "1.9.0"
