@@ -10,21 +10,22 @@ NativeFileDialog = "e1fe445b-aa65-4df4-81c1-2041507f0fd4"
 Optimization = "7f7a1694-90dd-40f0-9382-eb1efda571ba"
 OptimizationOptimJL = "36348300-93cb-4f02-beb5-3c3902f8871e"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
-SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 PolygonOps = "647866c9-e3ac-4575-94e7-e3d426903924"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [weakdeps]
-JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
 GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
+JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
 QuadraticModels = "f468eda6-eac5-11e8-05a5-ff9e497bcd19"
 RipQP = "1e40b3f8-35eb-4cd8-8edd-3e515bb9de08"
 
 [extensions]
 gui_ext = "GLMakie"
-tikhonov_ripqp_ext = ["RipQP", "QuadraticModels"]
 tikhonov_jump_ext = "JuMP"
+tikhonov_ripqp_ext = ["RipQP", "QuadraticModels"]
 
 [compat]
+JuMP = "1"
 julia = "1.9.0"
 
 [extras]
