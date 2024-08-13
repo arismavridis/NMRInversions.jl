@@ -33,5 +33,3 @@ function PDHGM(K::AbstractMatrix, s::AbstractVector, α::Real; tol=10, τ=10 , �
     return f
 end
 
-
-f = PDHGM(K, y, 1, tol=10, τ=10, σ=0.1); plot(f)
