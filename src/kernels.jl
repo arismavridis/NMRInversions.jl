@@ -10,8 +10,9 @@ end
 Create a kernel for the inversion of 1D data.
 x is the experiment x axis (time or b factor etc.)
 X is the range for the output x axis (T1, T2, D etc.)
+The output is the K matrix.
 
-If data vector is provided, SVD is performed on the kernel.
+If data vector is provided, SVD is performed on the kernel, and the output is a "svd_kernel_struct" instead.
 If data vector is complex, the SNR is calculated and the SVD is automatically truncated accordingly.
 """
 function create_kernel(exptype::Type{<:inversion1D}, x::Vector, X::Vector)
@@ -35,7 +36,7 @@ function create_kernel(exptype::Type{<:inversion1D}, x::Vector, X::Vector, g::Ve
 
     K_new = Diagonal(usv.S) * usv.V'
     g_new = usv.U' * g
-    
+
     return svd_kernel_struct(K_new, g_new, usv.U, usv.S, usv.V)
 
 end
@@ -46,7 +47,7 @@ function create_kernel(exptype::Type{<:inversion1D}, x::Vector, X::Vector, g::Ve
     elseif exptype in [CPMG, PFG]
         kernel_eq = (t, T) -> exp(-t / T)
     end
-   
+
     SNR = calc_snr(g)
     usv = svd(kernel_eq.(x, X'))
     indices = findall(i -> i .> (1 / SNR), usv.S) # find elements in S12 above the noise threshold
@@ -59,7 +60,7 @@ function create_kernel(exptype::Type{<:inversion1D}, x::Vector, X::Vector, g::Ve
 
     K_new = Diagonal(S) * V'
     g_new = U' * real.(g)
-    
+
     return svd_kernel_struct(K_new, g_new, U, S, V)
 
 end
@@ -96,9 +97,9 @@ end
 
 """
 Create a kernel for the inversion of 2D data.
-t_direct is the direct dimension acquisition parameter
-t_indirect is the indirect dimension acquisition parameter
-Raw is the 2D data matrix of complex data
+t_direct is the direct dimension acquisition parameter.
+t_indirect is the indirect dimension acquisition parameter.
+Raw is the 2D data matrix of complex data.
 """
 function create_kernel(exptype::Type{<:inversion2D},
     x_direct::AbstractVector, x_indirect::AbstractVector,
@@ -134,7 +135,7 @@ function create_kernel(exptype::Type{<:inversion2D},
 
     g̃ = diag(usv_indir.U[:, si]' * G' * usv_dir.U[:, sj])
 
-    Ũ₀ = Array{Float64}(undef, 0, 0) # change that to the actual U at some point, this is just a placeholder
+    Ũ₀ = Array{Float64}(undef, 0, 0) # no such thing as U in this case, it is absorbed by g 
 
     V1t = repeat(usv_dir.V[:, sj], size(usv_indir.V, 1), 1)
     V2t = reshape(repeat(usv_indir.V[:, si]', size(usv_dir.V, 1), 1), ñ, size(V1t, 1))'

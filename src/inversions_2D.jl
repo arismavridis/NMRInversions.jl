@@ -9,10 +9,10 @@ struct invres2D
 end
 
 
-function invert(exptype::Type{<:inversion2D}, directory::String=pick_folder(pwd()); kwargs...)
+function invert(inputs::input2D ; kwargs...)
 
-    cd(directory)
-    invert(exptype, import_spinsolve(pwd())...; kwargs...)
+    invert(inputs.exptype, inputs.x_direct, inputs.x_indirect, inputs.data ; kwargs...)
+
 end
 
 
@@ -47,7 +47,7 @@ function invert(
             write(io, "Residuals : " * join(r, ", ") * "\n")
 
         end
-        display("Data saved as inversion_results.txt")
+        display("Data saved as inversion_results.txt in $(pwd())")
     end
 
     if plot == true && !isnothing(Base.get_extension(NMRInversions, :gui_ext))

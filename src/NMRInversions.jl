@@ -15,35 +15,31 @@ to do list:
 """
 
 ## The following are custom types for multiple dispatch purposes
-# Pulse sequences
 
+# Pulse sequences
 abstract type inversion1D end
 abstract type inversion2D end
-export inversion1D, inversion2D
-
 struct IR <: inversion1D end
 struct CPMG <: inversion1D end
 struct PFG <: inversion1D end
 struct IRCPMG <: inversion2D end
-export IR, CPMG, PFG, IRCPMG
+export inversion1D, inversion2D, IR, CPMG, PFG, IRCPMG
 
 # Supported solvers 
 abstract type regularization_solver end
-export regularization_solver
-
 struct song <: regularization_solver end
 struct ripqp <: regularization_solver end
 struct pdhgm <: regularization_solver end
-export song, ripqp, pdhgm
+export regularization_solver, song, ripqp, pdhgm
 
 # Supported methods to determine regularization α parameter
 abstract type smoothing_optimizer end
-export smoothing_optimizer
-
 struct gcv <: smoothing_optimizer end
 struct brd <: smoothing_optimizer end
 struct lcurve <: smoothing_optimizer end
-export gcv, brd, lcurve
+export smoothing_optimizer, gcv, brd, lcurve
+
+
 
 ## Include the package files 
 include("inversions_io.jl")
