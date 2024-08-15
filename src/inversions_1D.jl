@@ -41,7 +41,15 @@ function invert(exptype::Type{<:inversion1D}, x::AbstractArray, y::Vector;
     lims=(-5, 1, 128), α=1, order=0, solver=song,
     savedata=false, makeplot=false)
 
-    X = exp10.(range(lims...))
+    if typeof(lims) == Tuple{Int, Int, Int}
+        X = exp10.(range(lims...))
+    elseif typeof(lims) == AbstractVector
+        X = lims
+    else
+        error("lims must be a tuple or a vector")
+    end
+
+
     if isa(α, Real)
 
         K = create_kernel(exptype, x, X)
@@ -49,8 +57,8 @@ function invert(exptype::Type{<:inversion1D}, x::AbstractArray, y::Vector;
         f, r = solve_regularization(K, real.(y), α, solver, order)
 
     elseif α == gcv
-        ker_struct = create_kernel(exptype, x, X, y)
 
+        ker_struct = create_kernel(exptype, x, X, y)
         f, r , α = solve_gcv(ker_struct, solver, order)
 
     end
@@ -72,21 +80,3 @@ function invert(exptype::Type{<:inversion1D}, x::AbstractArray, y::Vector;
 
 end
 
-
-## Conversion to standard form, copied from RegularizationTools
-# L = Γ(size(A, 2), order)
-# L⁺ = pinv(L)
-# p, n = size(L)
-# Iₙ = Matrix{Float64}(I, n, n)
-# Q, R = qr(L')
-# K0 = Q[:, p+1:end]
-# H, T = qr(A * K0)
-# H0 = H[:, 1:n-p]
-# K₀T⁻¹H₀ᵀ = K0 * T^-1 * H0'
-# L⁺ₐ = (Iₙ - K₀T⁻¹H₀ᵀ * A) * L⁺
-# Ā = A * L⁺ₐ
-# b̄ = b - A * K₀T⁻¹H₀ᵀ * b
-# Solve
-# f, r = solve_regularization(Ā, b̄, α, solver=solver)
-# Go back to general form
-# f = L⁺ * f + K₀T⁻¹H₀ᵀ * (b - A * L⁺ * f)
