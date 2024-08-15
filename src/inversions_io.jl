@@ -56,6 +56,7 @@ end
 
 function import_spinsolve(directory::String=pick_folder(pwd()))
 
+    directory = abspath(directory)
     cd(directory)
 
     # Read experiment parameters
@@ -94,6 +95,19 @@ function import_spinsolve(directory::String=pick_folder(pwd()))
 
 end
 
+function writeresults2D(name::String="")
+
+    open("inversion_results.txt", "w") do io
+        write(io, "Pulse Sequence : " * "IRCPMG" * "\n")
+        write(io, "SNR : " * string(calc_snr(Raw)) * "\n")
+        write(io, "alpha : " * string(α) * "\n")
+        write(io, "Direct Dimension : " * join(X_direct, ", ") * "\n")
+        write(io, "Indirect Dimension : " * join(X_indirect, ", ") * "\n")
+        write(io, "Inversion Results : " * join(f, ", ") * "\n")
+        write(io, "Residuals : " * join(r, ", ") * "\n")
+    end
+
+end
 
 function readresults(file::String=pick_file(pwd()))
 
@@ -275,11 +289,11 @@ function import_geospec(filedir::String=pick_file(pwd()))
 
     if pulse_sequence_number in [106, 110] #2D relaxation experiments
         # Return xdir, xindir, raw data matrix
-        return input2D(data[1:dimensions[1], 1] .* (1 / 1000), data[1:dimensions[1]:end, 2] .* (1 / 1000), reshape(complex.(y_re, y_im), dimensions[1], dimensions[2]))
+        return input2D(IRCPMG, data[1:dimensions[1], 1] .* (1 / 1000), data[1:dimensions[1]:end, 2] .* (1 / 1000), reshape(complex.(y_re, y_im), dimensions[1], dimensions[2]))
 
     elseif pulse_sequence_number in [108] # D-T_2
 
-        return input2D(data[1:dimensions[1], 1], data[1:dimensions[1]:end, 2] .* (1 / 1000), reshape(complex.(y_re, y_im), dimensions[1], dimensions[2]))
+        return input2D(PFGCPMG, data[1:dimensions[1], 1], data[1:dimensions[1]:end, 2] .* (1 / 1000), reshape(complex.(y_re, y_im), dimensions[1], dimensions[2]))
 
     elseif pulse_sequence_number in [105] #1D diffusion 
         # Return x and y data
