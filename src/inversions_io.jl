@@ -1,3 +1,16 @@
+struct input1D
+    exptype::Type{<:inversion1D}
+    x::AbstractVector{<:Real}
+    y::AbstractVector
+end
+
+struct input2D
+    exptype::Type{<:inversion2D}
+    x_direct::AbstractVector{<:Real}
+    x_indirect::AbstractVector{<:Real}
+    data::AbstractMatrix
+end
+
 
 function import_1D(file=pick_file(pwd()))
     data = readdlm(file, ',')
@@ -43,12 +56,7 @@ end
 
 function import_spinsolve(directory::String=pick_folder(pwd()))
 
-    Raw = readdlm(joinpath(directory, "T1IRT2.dat"), ' ')
-
-    if size(Raw, 2) == 1
-        Raw = readdlm(joinpath(directory, "T1IRT2.dat"), ',')
-    end
-    Raw = transpose(complex.(Raw[:, 1:2:end], Raw[:, 2:2:end]))
+    cd(directory)
 
     # Read experiment parameters
     acqu = readdlm(joinpath(directory, "acqu.par.bak"))
@@ -57,6 +65,15 @@ function import_spinsolve(directory::String=pick_folder(pwd()))
     τ_steps = acqu[36, 3]
     τ_min = acqu[20, 3] * 1e-3
     τ_max = acqu[19, 3] * 1e-3
+    experiment = acqu[13, 3]
+
+    Raw = readdlm(joinpath(directory, experiment * ".dat"), ' ')
+
+    if size(Raw, 2) == 1
+        Raw = readdlm(joinpath(directory, experiment * ".dat"), ',')
+    end
+
+    Data = collect(transpose(complex.(Raw[:, 1:2:end], Raw[:, 2:2:end])))
 
     ## Make time arrays
     # Time array in direct dimension
@@ -69,7 +86,11 @@ function import_spinsolve(directory::String=pick_folder(pwd()))
         t_indirect = collect(range(τ_min, τ_max, τ_steps))
     end
 
-    return t_direct, t_indirect, Raw
+    if experiment == "T1IRT2"
+        exptype = IRCPMG
+    end
+
+    return input2D(exptype, t_direct, t_indirect, Data)
 
 end
 
@@ -221,13 +242,15 @@ function testcorrection()
 
 end
 
-function import_geospec(directory::String=pick_file(pwd()))
+function import_geospec(filedir::String=pick_file(pwd()))
+
+    cd(dirname(filedir))
 
     data = []
     pulse_sequence_number::Int16 = 0
     dimensions = [0, 0]
 
-    open(directory) do io
+    open(filedir) do io
 
         readuntil(io, "TestType=")
         pulse_sequence_number = parse(Int16, readline(io))
@@ -252,18 +275,18 @@ function import_geospec(directory::String=pick_file(pwd()))
 
     if pulse_sequence_number in [106, 110] #2D relaxation experiments
         # Return xdir, xindir, raw data matrix
-        return data[1:dimensions[1], 1].* (1/1000), data[1:dimensions[1]:end, 2].* (1/1000), reshape(complex.(y_re, y_im), dimensions[1], dimensions[2])
+        return input2D(data[1:dimensions[1], 1] .* (1 / 1000), data[1:dimensions[1]:end, 2] .* (1 / 1000), reshape(complex.(y_re, y_im), dimensions[1], dimensions[2]))
 
     elseif pulse_sequence_number in [108] # D-T_2
 
-        return data[1:dimensions[1], 1], data[1:dimensions[1]:end, 2].* (1/1000), reshape(complex.(y_re, y_im), dimensions[1], dimensions[2])
+        return input2D(data[1:dimensions[1], 1], data[1:dimensions[1]:end, 2] .* (1 / 1000), reshape(complex.(y_re, y_im), dimensions[1], dimensions[2]))
 
     elseif pulse_sequence_number in [105] #1D diffusion 
         # Return x and y data
-        return data[:, 1] , complex.(y_re, y_im)
+        return data[:, 1], complex.(y_re, y_im)
 
     else                                        #1D relaxation experiments
         # Return x and y data
-        return data[:, 1] .* (1/1000), complex.(y_re, y_im)
+        return data[:, 1] .* (1 / 1000), complex.(y_re, y_im) # Converts time to seconds
     end
 end
