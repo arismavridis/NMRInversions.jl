@@ -1,47 +1,16 @@
-struct invres1D
-    ps::String
-    x::Vector
-    f::Vector
-    r::Vector
-    SNR::Real
-    alpha::Real
-end
 
-function invert(exptype::Type{<:inversion1D}, file::String=pick_file(pwd()); kwargs...)
+function invert(data::input1D; kwargs...)
 
-    csvmatrix = readdlm(file, ',')
-    x = csvmatrix[:, 1]
-
-    if size(csvmatrix, 2) == 2 # If we got only real data
-        y = csvmatrix[:, 2]
-
-    elseif size(csvmatrix, 2) == 3  # If we got both real and imaginary data
-
-        if exptype in [IR, IRCPMG]
-            positive_start = false
-        else
-            positive_start = true
-        end
-
-        yre, yim, ϕ = autophase(csvmatrix[:, 2], csvmatrix[:, 3], maxre1=positive_start)
-        display("Data phase corrected by $(round(ϕ, digits=3)) radians.")
-
-        y = complex.(yre, yim)
-    else
-        error("The 1D experiment data file must have two or three columns.")
-    end
-
-    invert(exptype, x, y; kwargs...)
+    return invert(data.exptype, data.x, data.y; kwargs...)
 
 end
-
 
 
 function invert(exptype::Type{<:inversion1D}, x::AbstractArray, y::Vector;
     lims=(-5, 1, 128), α=1, order=0, solver=song,
     savedata=false, makeplot=false)
 
-    if typeof(lims) == Tuple{Int, Int, Int}
+    if typeof(lims) == Tuple{Int,Int,Int}
         X = exp10.(range(lims...))
     elseif typeof(lims) == AbstractVector
         X = lims
@@ -59,7 +28,10 @@ function invert(exptype::Type{<:inversion1D}, x::AbstractArray, y::Vector;
     elseif α == gcv
 
         ker_struct = create_kernel(exptype, x, X, y)
-        f, r , α = solve_gcv(ker_struct, solver, order)
+        f, r, α = solve_gcv(ker_struct, solver, order)
+
+    else
+        error("α must be a real number or gcv")
 
     end
 
@@ -70,13 +42,12 @@ function invert(exptype::Type{<:inversion1D}, x::AbstractArray, y::Vector;
         end
     end
 
-    if makeplot == true
-        plotrange = collect(range(0, x[end] + 0.1 * x[end], 258))
-        fit = create_kernel(exptype, plotrange, exp10.(range(lims...))) * f
+    x_fit = collect(range(0, x[end] + 0.1 * x[end], 258))
+    y_fit = create_kernel(exptype, x_fit, X) * f
 
-    end
+    isreal(y) ? SNR = NaN : SNR = calc_snr(y)
 
-    return f, r
+    return invres1D(exptype, X, f, r, SNR, α, x_fit, y_fit)
 
 end
 
