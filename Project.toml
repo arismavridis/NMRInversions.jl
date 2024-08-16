@@ -26,6 +26,7 @@ tikhonov_ripqp_ext = ["RipQP", "QuadraticModels"]
 
 [compat]
 GLMakie = "0.10"
+NativeFileDialog = "0.2"
 julia = "1.9.0"
 
 [extras]
