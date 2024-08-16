@@ -15,9 +15,9 @@ function test1D(exptype::Type{<:inversion1D})
     g = K * f_custom
     y = g + 0.001 * maximum(g) .* randn(length(x))
 
-    f_estimated, r = invert(exptype, x, y, α=gcv)
+    results = invert(exptype, x, y, α=gcv)
 
-    return norm(f_estimated - f_custom) < 0.5
+    return norm(results.f - f_custom) < 0.5
 end
 
 function test2D(exptype::Type{<:inversion2D})
@@ -42,9 +42,9 @@ function test2D(exptype::Type{<:inversion2D})
     g = K * f_custom
     y = g + 0.001 * maximum(g) .* randn(length(x_direct) * length(x_indirect))
 
-    f_estimated, r = invert(exptype, x_direct, x_indirect, y, α=gcv)
+    results = invert(exptype, x_direct, x_indirect, y, α=gcv)
 
-    return norm(f_estimated - f_custom) < 0.5
+    return norm(resutls.f - f_custom) < 0.5
 
 end
 
