@@ -23,7 +23,8 @@ struct IR <: inversion1D end
 struct CPMG <: inversion1D end
 struct PFG <: inversion1D end
 struct IRCPMG <: inversion2D end
-export inversion1D, inversion2D, IR, CPMG, PFG, IRCPMG
+struct PFGCPMG <: inversion2D end
+export inversion1D, inversion2D, IR, CPMG, PFG, IRCPMG, PFGCPMG
 
 # Supported solvers 
 abstract type regularization_solver end

@@ -2,12 +2,20 @@ module gui_ext
 
 using NMRInversions, GLMakie, PolygonOps, LinearAlgebra
 
+
 function NMRInversions.select_peaks(file::String=pick_file(pwd()))
 
-    invres = NMRInversions.readresults(file)
-    dir = invres.dir
-    indir = invres.indir
-    f = invres.f
+    inv_results = NMRInversions.readresults(file)
+    #     return NMRInversions.select_peaks(inv_results)
+
+    # end
+
+
+    # function NMRInversions.select_peaks(inv_results::NMRInversions.invres2D)
+
+    dir = inv_results.X_dir
+    indir = inv_results.X_indir
+    f = inv_results.f
     F = collect(reshape(f, length(dir), length(indir))')
 
     x = collect(1:length(indir))
@@ -86,7 +94,7 @@ function NMRInversions.select_peaks(file::String=pick_file(pwd()))
         empty!(axmain)
         empty!(axtop)
         empty!(axright)
-        empty!(ax3d)
+        # empty!(ax3d)
 
         # Static plots
         contourf!(axmain, z, colormap=:tempo, levels=50)
@@ -103,8 +111,8 @@ function NMRInversions.select_peaks(file::String=pick_file(pwd()))
         lines!(axright, dir_dist, 1:length(dir), colormap=:tab10, colorrange=(1, 10), color=8)
 
         surface!(ax3d, x, y, spo, colormap=:blues,
-        colorrange=(minimum(filter(x -> x != 0, vec(z))), maximum(z)),
-        lowclip=:transparent)
+            colorrange=(minimum(filter(x -> x != 0, vec(z))), maximum(z)),
+            lowclip=:transparent)
 
         # Plot the points in the selection vector
         scatter!(axmain, selection, colormap=:tab10, colorrange=(1, 10), color=8)
