@@ -26,6 +26,7 @@ tikhonov_ripqp_ext = ["RipQP", "QuadraticModels"]
 
 [compat]
 GLMakie = "0.10"
+OptimizationOptimJL = "0.3"
 julia = "1.9.0"
 
 [extras]
