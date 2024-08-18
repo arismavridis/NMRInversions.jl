@@ -71,6 +71,16 @@ function create_decay(exptype="T1", ;
     return t, signal
 end
 
+function read_acqu(filename, parameter)
+
+    p = ""
+    open(filename) do io
+        readuntil(io, parameter*" = ")
+        p = readline(io)
+    end
+    return replace(p, "\"" => "")
+end
+
 
 function import_spinsolve(directory::String=pick_folder(pwd()))
 
