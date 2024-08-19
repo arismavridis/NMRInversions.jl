@@ -12,6 +12,7 @@ import Optimization, OptimizationOptimJL
 to do list:
 - add L curve method 
 - add gcv for reci method
+- consider RegularizedLeastSquares.jl
 """
 
 ## The following are custom types for multiple dispatch purposes
@@ -39,7 +40,6 @@ struct gcv <: smoothing_optimizer end
 struct brd <: smoothing_optimizer end
 struct lcurve <: smoothing_optimizer end
 export smoothing_optimizer, gcv, brd, lcurve
-
 
 
 ## Include the package files 

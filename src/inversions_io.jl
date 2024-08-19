@@ -18,8 +18,8 @@ struct invres1D
     r::Vector
     SNR::Real
     alpha::Real
-    x_fit::Vector
-    y_fit::Vector
+    xfit::Vector
+    yfit::Vector
 end
 
 struct invres2D
@@ -32,6 +32,11 @@ struct invres2D
     alpha::Real
 end
 
+function import_1D(exptype::Type{<:inversion1D}, file=pick_file(pwd()))
+    x, y = import_1D(file)
+    return input1D(exptype, x, y)
+end
+
 function import_1D(file=pick_file(pwd()))
     data = readdlm(file, ',')
     x = vec(data[:, 1])
@@ -39,37 +44,6 @@ function import_1D(file=pick_file(pwd()))
     return x, y
 end
 
-function create_decay(exptype="T1", ;
-    coeffs=[1 1], noise=0.01,
-    tlb=0.01, tub=5, points=32,
-    logspace=false)
-    coeffs = coeffs[:, :]
-
-    if exptype == "T1"
-        kernel_eq = (t, T) -> 1 - 2 * exp(-t / T)
-
-    elseif exptype == "T2"
-        kernel_eq = (t, T) -> exp(-t / T)
-
-    end
-
-    #Create a time vector
-
-    t = []
-    if logspace == true
-        t = exp10.(range(log10(tlb), log10(tub), points))
-    elseif logspace == false
-        t = collect(range(tlb, tub, points))
-    end
-
-    #Create a synthetic signal
-    signal = vec(sum(coeffs[:, 1] .* kernel_eq.(t', coeffs[:, 2]), dims=1)')
-    display(typeof(signal))
-    signal = signal .+ (noise * maximum(signal)) .* randn(length(t))
-
-    display(scatter(t, signal, legend=false))
-    return t, signal
-end
 
 function read_acqu(filename, parameter)
 
@@ -123,9 +97,22 @@ function import_spinsolve(directory::String=pick_folder(pwd()))
 
 end
 
-function writeresults(name::String, res::invres2D)
+function writeresults(filedir::String, res::invres1D)
 
-    open(name, "w") do io
+    open(filedir, "w") do io
+        write(io, "Pulse Sequence : " * string(res.exptype) * "\n")
+        write(io, "SNR : " * string(res.SNR) * "\n")
+        write(io, "alpha : " * string(res.alpha) * "\n")
+        write(io, "X : " * join(res.X, ", ") * "\n")
+        write(io, "Inversion Results : " * join(res.f, ", ") * "\n")
+        write(io, "Residuals : " * join(res.r, ", ") * "\n")
+    end
+
+end
+
+function writeresults(filedir::String, res::invres2D)
+
+    open(filedir, "w") do io
         write(io, "Pulse Sequence : " * string(res.exptype) * "\n")
         write(io, "SNR : " * string(res.SNR) * "\n")
         write(io, "alpha : " * string(res.alpha) * "\n")
