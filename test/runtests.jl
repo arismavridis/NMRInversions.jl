@@ -15,7 +15,8 @@ function test1D(exptype::Type{<:inversion1D})
     g = K * f_custom
     y = g + 0.001 * maximum(g) .* randn(length(x))
 
-    results = invert(exptype, x, y, α=gcv)
+    # results = invert(exptype, x, y, α=gcv)
+    results = invert(exptype, x, y, α=gcv, solver=linear_tikhonov,order=1)
 
     return norm(results.f - f_custom) < 0.5
 end
