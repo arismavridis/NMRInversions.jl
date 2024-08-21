@@ -21,9 +21,9 @@ function invert(exptype::Type{<:inversion1D}, x::AbstractArray, y::Vector;
 
     if isa(α, Real)
 
-        K = create_kernel(exptype, x, X)
+        ker_struct = create_kernel(exptype, x, X, y)
 
-        f, r = solve_regularization(K, real.(y), α, solver, order)
+        f, r = solve_regularization(ker_struct.K, ker_struct.g, α, solver, order)
 
     elseif α == gcv
 

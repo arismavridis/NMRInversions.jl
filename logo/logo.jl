@@ -43,4 +43,6 @@ begin
     end
 
     f
+    save("./NMRInversions.jl/logo/logo.svg", f)
+
 end
