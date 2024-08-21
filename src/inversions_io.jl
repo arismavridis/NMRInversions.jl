@@ -11,6 +11,31 @@ struct input2D
     data::AbstractMatrix
 end
 
+struct invres1D
+    exptype::Type{<:inversion1D}
+    X::Vector
+    f::Vector
+    r::Vector
+    SNR::Real
+    alpha::Real
+    xfit::Vector
+    yfit::Vector
+end
+
+struct invres2D
+    exptype::Type{<:inversion2D}
+    X_dir::Vector
+    X_indir::Vector
+    f::Vector
+    r::Vector
+    SNR::Real
+    alpha::Real
+end
+
+function import_1D(exptype::Type{<:inversion1D}, file=pick_file(pwd()))
+    x, y = import_1D(file)
+    return input1D(exptype, x, y)
+end
 
 function import_1D(file=pick_file(pwd()))
     data = readdlm(file, ',')
@@ -20,42 +45,20 @@ function import_1D(file=pick_file(pwd()))
 end
 
 
-function create_decay(exptype="T1", ;
-    coeffs=[1 1], noise=0.01,
-    tlb=0.01, tub=5, points=32,
-    logspace=false)
-    coeffs = coeffs[:, :]
+function read_acqu(filename, parameter)
 
-
-    if exptype == "T1"
-        kernel_eq = (t, T) -> 1 - 2 * exp(-t / T)
-
-    elseif exptype == "T2"
-        kernel_eq = (t, T) -> exp(-t / T)
-
+    p = ""
+    open(filename) do io
+        readuntil(io, parameter*" = ")
+        p = readline(io)
     end
-
-    #Create a time vector
-
-    t = []
-    if logspace == true
-        t = exp10.(range(log10(tlb), log10(tub), points))
-    elseif logspace == false
-        t = collect(range(tlb, tub, points))
-    end
-
-    #Create a synthetic signal
-    signal = vec(sum(coeffs[:, 1] .* kernel_eq.(t', coeffs[:, 2]), dims=1)')
-    display(typeof(signal))
-    signal = signal .+ (noise * maximum(signal)) .* randn(length(t))
-
-    display(scatter(t, signal, legend=false))
-    return t, signal
+    return replace(p, "\"" => "")
 end
 
 
 function import_spinsolve(directory::String=pick_folder(pwd()))
 
+    directory = abspath(directory)
     cd(directory)
 
     # Read experiment parameters
@@ -94,13 +97,39 @@ function import_spinsolve(directory::String=pick_folder(pwd()))
 
 end
 
+function writeresults(filedir::String, res::invres1D)
+
+    open(filedir, "w") do io
+        write(io, "Pulse Sequence : " * string(res.exptype) * "\n")
+        write(io, "SNR : " * string(res.SNR) * "\n")
+        write(io, "alpha : " * string(res.alpha) * "\n")
+        write(io, "X : " * join(res.X, ", ") * "\n")
+        write(io, "Inversion Results : " * join(res.f, ", ") * "\n")
+        write(io, "Residuals : " * join(res.r, ", ") * "\n")
+    end
+
+end
+
+function writeresults(filedir::String, res::invres2D)
+
+    open(filedir, "w") do io
+        write(io, "Pulse Sequence : " * string(res.exptype) * "\n")
+        write(io, "SNR : " * string(res.SNR) * "\n")
+        write(io, "alpha : " * string(res.alpha) * "\n")
+        write(io, "Direct Dimension : " * join(res.X_dir, ", ") * "\n")
+        write(io, "Indirect Dimension : " * join(res.X_indir, ", ") * "\n")
+        write(io, "Inversion Results : " * join(res.f, ", ") * "\n")
+        write(io, "Residuals : " * join(res.r, ", ") * "\n")
+    end
+
+end
 
 function readresults(file::String=pick_file(pwd()))
 
     open(file) do io
 
         readuntil(io, "Pulse Sequence : ")
-        PulseSequence = readline(io)
+        PulseSequence = eval(Meta.parse(readline(io)))
         readuntil(io, "SNR : ")
         SNR = parse.(Float64, readline(io))
         readuntil(io, "alpha : ")
@@ -117,9 +146,6 @@ function readresults(file::String=pick_file(pwd()))
         return invres2D(PulseSequence, dir, indir, f, r, SNR, α)
     end
 end
-
-
-
 
 
 function entropy(u::AbstractArray, p::Tuple)
@@ -183,63 +209,21 @@ function phase_shift(Re, Im, ϕ)
     return Re_new, Im_new
 end
 
-function autophase(Re, Im; maxre1=false)
+
+function autophase(re, im, startingpoint::Real) # startingpoint is a value between -1 and 1
 
     ϕ_range = range(0, 2π, 500)
-    Re1_vs_φ = Re[1] .* cos.(ϕ_range) - Im[1] .* sin.(ϕ_range)
+    Re1_vs_φ = re[1] .* cos.(ϕ_range) - im[1] .* sin.(ϕ_range)
 
-    if maxre1 == true
-        ϕ₀ = ϕ_range[argmax(Re1_vs_φ)]
-    elseif maxre1 == false
-        ϕ₀ = ϕ_range[argmin(Re1_vs_φ)]
-    end
-
-    # optf = Optimization.OptimizationFunction(im_cost)
-    # prob = Optimization.OptimizationProblem(optf, [ϕ₀], (Re, Im), lb=[ϕ₀ - 0.1], ub=[ϕ₀ + 0.1],x_tol=1e-2)
-    # ϕ = OptimizationOptimJL.solve(prob, OptimizationOptimJL.ParticleSwarm())[1]
+    ϕ₀ = ϕ_range[argmin(abs.(Re1_vs_φ .- startingpoint * maximum(Re1_vs_φ)))]
 
     optf = Optimization.OptimizationFunction(im_cost, Optimization.AutoForwardDiff())
-    prob = Optimization.OptimizationProblem(optf, [ϕ₀], (Re, Im), lb=[ϕ₀ - 0.1], ub=[ϕ₀ + 0.1], x_tol=1e-5)
+    prob = Optimization.OptimizationProblem(optf, [ϕ₀], (re, im), lb=[ϕ₀ - 1], ub=[ϕ₀ + 1], x_tol=1e-5)
     ϕ = OptimizationOptimJL.solve(prob, OptimizationOptimJL.BFGS())[1]
 
-    Rₙ, Iₙ = phase_shift(Re, Im, ϕ)
+    Rₙ, Iₙ = phase_shift(re, im, ϕ)
 
     return Rₙ, Iₙ, ϕ
-end
-
-
-function testcorrection()
-    # Create real and imaginary parts
-    Re = exp.(-range(1, 20, 1000)) + randn(1000) .* 0.01
-    Im = randn(1000) .* 0.01
-
-    # Import data
-    # data = import_geospec("/otherdata/9847zg/stratum_nmr/plug9_IR.txt")
-    # Re = data[:, 3]
-    # Im = data[:, 4]
-
-    p1 = plot([Re, Im], label=["Original real" "Original Imaginary"])
-
-    # Get them out of phase
-    ϕd = rand() * 2π
-    Re, Im = phase_shift(Re, Im, ϕd)
-
-    p2 = plot([Re, Im], label=["Dephased real" "Dephased Imaginary"])
-
-    Rₙ, Iₙ, ϕc = autophase(Re, Im)
-    p3 = plot([Rₙ, Iₙ], label=["Corrected real" "Corrected Imaginary"])
-
-    ϕ_range = range(0, 2π, 20000)
-    Re1_vs_φ = Re[1] .* cos.(ϕ_range) - Im[1] .* sin.(ϕ_range)
-    Im_sum_vs_φ = [im_cost([ϕ], (Re, Im)) for ϕ in ϕ_range]
-
-    p4 = plot(ϕ_range, Re1_vs_φ, xlabel="ϕ", label="Re[1]")
-    p4 = plot!(ϕ_range, (Im_sum_vs_φ ./ maximum(Im_sum_vs_φ)) .* maximum(Re1_vs_φ), xlabel="ϕ", label="sum(Im.^2)", legend=:topleft)
-    p4 = vline!(p4, [ϕc], label="corrected phase")
-    display(plot(p1, p2, p3, p4))
-
-    display("The correction error is $(2π - (ϕd + ϕc)) radians")
-
 end
 
 function import_geospec(filedir::String=pick_file(pwd()))
@@ -260,33 +244,43 @@ function import_geospec(filedir::String=pick_file(pwd()))
         data = readdlm(io, '\t', Float64, skipstart=2)
     end
 
-    if pulse_sequence_number in [7, 106]
-        positive_start = false
-    else
-        positive_start = true
-    end
-
     y_re = data[:, 3]
     y_im = data[:, 4]
 
-    y_re, y_im, ϕ = autophase(y_re, y_im, maxre1=positive_start)
+
+    typedict = Dict(
+        3 => CPMG,
+        7 => IR,
+        105 => PFG,
+        106 => IRCPMG,
+        108 => PFGCPMG
+        # ,110 => CPMGCPMG
+    )
+
+    exptype = typedict[pulse_sequence_number]
+
+    if exptype in [IR, IRCPMG]
+        y_re, y_im, ϕ = autophase(y_re, y_im, -1)
+    else
+        y_re, y_im, ϕ = autophase(y_re, y_im, 1)
+    end
 
     display("Data phase corrected by $(round(ϕ,digits=3)) radians.")
 
-    if pulse_sequence_number in [106, 110] #2D relaxation experiments
-        # Return xdir, xindir, raw data matrix
-        return input2D(data[1:dimensions[1], 1] .* (1 / 1000), data[1:dimensions[1]:end, 2] .* (1 / 1000), reshape(complex.(y_re, y_im), dimensions[1], dimensions[2]))
+    if exptype == IRCPMG
 
-    elseif pulse_sequence_number in [108] # D-T_2
+        return input2D(IRCPMG, data[1:dimensions[1], 1] .* (1 / 1000), data[1:dimensions[1]:end, 2] .* (1 / 1000), reshape(complex.(y_re, y_im), dimensions[1], dimensions[2]))
 
-        return input2D(data[1:dimensions[1], 1], data[1:dimensions[1]:end, 2] .* (1 / 1000), reshape(complex.(y_re, y_im), dimensions[1], dimensions[2]))
+    elseif exptype == PFGCPMG
 
-    elseif pulse_sequence_number in [105] #1D diffusion 
-        # Return x and y data
-        return data[:, 1], complex.(y_re, y_im)
+        return input2D(PFGCPMG, data[1:dimensions[1], 1], data[1:dimensions[1]:end, 2] .* (1 / 1000), reshape(complex.(y_re, y_im), dimensions[1], dimensions[2]))
 
-    else                                        #1D relaxation experiments
-        # Return x and y data
-        return data[:, 1] .* (1 / 1000), complex.(y_re, y_im) # Converts time to seconds
+    elseif exptype == PFG
+
+        return input1D(exptype, data[:, 1], complex.(y_re, y_im))
+
+    elseif exptype in [IR, CPMG]
+
+        return input1D(exptype, data[:, 1] .* (1 / 1000), complex.(y_re, y_im)) # Converts time to seconds
     end
 end

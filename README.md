@@ -1,4 +1,7 @@
 # NMRInversions.jl
+<p align="center">
+    <img width=450 src="./logo/logo.svg"/>
+</p>
 
 This package can be used to easily perform numerical inversions for 1D and 2D NMR relaxation and diffusion measurements.
 

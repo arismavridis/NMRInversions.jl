@@ -18,18 +18,24 @@ In the inputs, r is the residuals of the solution,
 s are the singular values of the kernel and x=Ṽ₀'f or x= s .* c 
 (look Mitchell 2012 paper https://doi.org/10.1016/j.pnmrs.2011.07.002)
 """
-function gcv_score(α, r, s, x)
+function gcv_score(α, r, s, x; next_alpha=true)
 
     ñ = length(s)
     c = r ./ α
     σ² = s .^ 2
     m̂ = sum(σ² ./ (σ² .+ α))
-    dm̂ = sum(σ² ./ ((σ² .+ α) .^ 2))
-    t̂ = sum(x .^ 2 ./ (σ² .+ α))
     φₙ = (α .^ 2 * c' * c .* ñ) ./ ((ñ - m̂) .^ 2)  # GCV score to be minimized
-    αₙ = (α .^ 2 * c' * c * dm̂) / (t̂ * (ñ - m̂))  # α update value, test this one next
 
-    return φₙ, αₙ
+    if next_alpha
+
+        dm̂ = sum(σ² ./ ((σ² .+ α) .^ 2))
+        t̂ = sum(x .^ 2 ./ (σ² .+ α))
+        αₙ = (α .^ 2 * c' * c * dm̂) / (t̂ * (ñ - m̂))  # α update value, test this one next
+        return φₙ, αₙ
+
+    else
+        return φₙ
+    end
 end
 
 
@@ -38,7 +44,7 @@ Solve repeatedly until the GCV score stops decreasing.
 Select the solution with minimum score and return it, along with the residuals.
 """
 function solve_gcv(svds::svd_kernel_struct, solver::Type{<:regularization_solver}, order::Int)
-    
+
     s̃ = svds.S
     ñ = length(s̃)
 

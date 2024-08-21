@@ -1,13 +1,24 @@
 module gui_ext
 
-using NMRInversions, GLMakie, PolygonOps, LinearAlgebra
+using NMRInversions, GLMakie, PolygonOps, LinearAlgebra, NativeFileDialog
 
-function NMRInversions.select_peaks(file::String=pick_file(pwd()))
+```
+write a function that reads the file and plots everything, use it each time plot is updated,
+    including when  you firts plot it
+```
 
-    invres = NMRInversions.readresults(file)
-    dir = invres.dir
-    indir = invres.indir
-    f = invres.f
+function NMRInversions.select_peaks(resultsfile::String=pick_file(pwd()))
+
+    inv_results = NMRInversions.readresults(resultsfile)
+    #     return NMRInversions.select_peaks(inv_results)
+
+    # end
+
+    # function NMRInversions.select_peaks(inv_results::NMRInversions.invres2D)
+
+    dir = inv_results.X_dir
+    indir = inv_results.X_indir
+    f = inv_results.f
     F = collect(reshape(f, length(dir), length(indir))')
 
     x = collect(1:length(indir))
@@ -103,8 +114,8 @@ function NMRInversions.select_peaks(file::String=pick_file(pwd()))
         lines!(axright, dir_dist, 1:length(dir), colormap=:tab10, colorrange=(1, 10), color=8)
 
         surface!(ax3d, x, y, spo, colormap=:blues,
-        colorrange=(minimum(filter(x -> x != 0, vec(z))), maximum(z)),
-        lowclip=:transparent)
+            colorrange=(minimum(filter(x -> x != 0, vec(z))), maximum(z)),
+            lowclip=:transparent)
 
         # Plot the points in the selection vector
         scatter!(axmain, selection, colormap=:tab10, colorrange=(1, 10), color=8)
@@ -165,7 +176,7 @@ function NMRInversions.select_peaks(file::String=pick_file(pwd()))
             lines!(axright, dir_dist[], 1:length(dir), linestyle=:dash, colormap=:tab10, colorrange=(1, 10), color=peak_counter, alpha=0.5)
 
             # Add info to the file
-            open(file, "a") do file
+            open(resultsfile, "a") do file
                 println(file, "Selection " * collect('a':'z')[peak_counter] *
                               " : T1=$T1 , T2=$T2 , T1/T2=$(T1/T2) , VolFraction=$(sum(spo[])/sum(z)) , Polygon Selection : " *
                               join(reduce(vcat, [[polygon[][i][1], polygon[][i][2]] for i in axes(polygon[], 1)]), ", ")
@@ -232,9 +243,9 @@ function NMRInversions.select_peaks(file::String=pick_file(pwd()))
         peak_counter = 0
 
         # Rewrite the file, keeping only the first 7 lines
-        lines = readlines(file)
+        lines = readlines(resultsfile)
         lines_to_keep = lines[1:min(7, end)]
-        open(file, "w") do io
+        open(resultsfile, "w") do io
             for line in lines_to_keep
                 write(io, line * "\n")
             end
@@ -251,9 +262,9 @@ function NMRInversions.select_peaks(file::String=pick_file(pwd()))
             @warn("You need to make a selection.")
         else
             # Rewrite the file, keeping only the first 7 lines plus polygon selection
-            lines = readlines(file)
+            lines = readlines(resultsfile)
             lines_to_keep = lines[1:min(7, end)]
-            open(file, "w") do io
+            open(resultsfile, "w") do io
                 for line in lines_to_keep
                     write(io, line * "\n")
                 end
@@ -279,9 +290,9 @@ function NMRInversions.select_peaks(file::String=pick_file(pwd()))
 
     on(exportb.clicks) do _
         if isnothing(tb.stored_string[])
-            NMRInversions.pubfig(title="")
+            NMRInversions.pubfig(resultsfile, title="")
         else
-            NMRInversions.pubfig(title=tb.stored_string[])
+            NMRInversions.pubfig(resultsfile, title=tb.stored_string[])
         end
     end
 
@@ -294,8 +305,8 @@ end
 function NMRInversions.pubfig(file="inversion_results.txt"; title="", ppu=2)
 
     invres = NMRInversions.readresults(file)
-    dir = invres.dir
-    indir = invres.indir
+    dir = invres.X_dir
+    indir = invres.X_indir
     f = invres.f
 
     x = collect(1:length(indir))
@@ -398,7 +409,7 @@ function NMRInversions.pubfig(file="inversion_results.txt"; title="", ppu=2)
         end
     end
 
-    Makie.save("Results.png", m, px_per_unit=ppu)
+    Makie.save(joinpath(dirname(file),"Results.png"), m, px_per_unit=ppu)
 
 end
 
