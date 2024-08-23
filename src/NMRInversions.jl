@@ -32,8 +32,8 @@ abstract type regularization_solver end
 struct song <: regularization_solver end
 struct ripqp <: regularization_solver end
 struct pdhgm <: regularization_solver end
-struct linear_tikhonov <: regularization_solver end
-export regularization_solver, song, ripqp, pdhgm, linear_tikhonov
+struct optim_nnls <: regularization_solver end
+export regularization_solver, song, ripqp, pdhgm, optim_nnls
 
 # Supported methods to determine regularization α parameter
 abstract type smoothing_optimizer end
@@ -51,7 +51,7 @@ include("inversions_1D.jl")
 include("inversions_2D.jl")
 include("tikhonov_song.jl")
 include("L1_regularization.jl")
-include("L2_regularization.jl")
+include("nnls.jl")
 
 # Export useful functions
 export invert

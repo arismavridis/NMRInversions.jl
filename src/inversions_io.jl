@@ -30,6 +30,8 @@ struct invres2D
     r::Vector
     SNR::Real
     alpha::Real
+    keep_polygon::Vector
+    select_polygon::Vector
 end
 
 function import_1D(exptype::Type{<:inversion1D}, file=pick_file(pwd()))
@@ -49,7 +51,7 @@ function read_acqu(filename, parameter)
 
     p = ""
     open(filename) do io
-        readuntil(io, parameter*" = ")
+        readuntil(io, parameter * " = ")
         p = readline(io)
     end
     return replace(p, "\"" => "")
@@ -143,7 +145,7 @@ function readresults(file::String=pick_file(pwd()))
         readuntil(io, "Residuals : ")
         r = parse.(Float64, split(readline(io), ','))
 
-        return invres2D(PulseSequence, dir, indir, f, r, SNR, α)
+        return invres2D(PulseSequence, dir, indir, f, r, SNR, α, [], [])
     end
 end
 

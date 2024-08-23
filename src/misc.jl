@@ -81,3 +81,66 @@ function solve_gcv(svds::svd_kernel_struct, solver::Type{<:regularization_solver
 
     return f, r, α
 end
+
+
+function l_curvature(f, r, α, A)
+
+    ξ = f'f
+    ρ = r'r
+    λ = √α
+
+    z = solve_nnls(A, r)
+
+    ∂ξ∂λ = 4 / λ * f'z
+
+    ĉ = (2ξ * ρ / ∂ξ∂λ) * (α * ∂ξ∂λ * ρ + 2 * ξ * λ * ρ + λ^4 * ξ * ∂ξ∂λ) / (α * ξ^2 + ρ^2)^(3 / 2)
+
+    return ĉ
+
+end
+
+
+function l_curve(K, g, lower, upper, n, order)
+
+    alphas = exp10.(range(log10(lower), log10(upper), n))
+    curvatures = zeros(length(alphas))
+
+    ξarray = zeros(length(alphas))
+    ρarray = zeros(length(alphas))
+
+    for (i, α) in enumerate(alphas)
+        A = sparse([K; √(α) .* NMRInversions.Γ(size(K, 2), order)])
+
+        f = vec(nonneg_lsq(A, [y; zeros(size(A, 1) - size(y, 1))], alg=:nnls))
+        r = K * f - y
+
+        ξ = f'f
+        ρ = r'r
+
+        λ = √α
+
+        ξarray[i] = ξ
+        ρarray[i] = ρ
+
+        z = vec(nonneg_lsq(A, [r; zeros(size(A, 1) - size(r, 1))], alg=:nnls))
+
+        ∂ξ∂λ = (4 / λ) * f'z
+
+        ĉ = (2ξ * ρ / ∂ξ∂λ) * (α * ∂ξ∂λ * ρ + 2 * ξ * λ * ρ + λ^4 * ξ * ∂ξ∂λ) / (α * ξ^2 + ρ^2)^(3 / 2)
+
+        curvatures[i] = ĉ
+
+    end
+    plot(ρarray, ξarray, xscale=:log10, yscale=:log10)
+
+    non_inf_indx = findall(!isinf, curvatures)
+    argmax(curvatures[non_inf_indx])
+    α = alphas[non_inf_indx][argmax(curvatures[non_inf_indx])]
+    A = sparse([K; √(α) .* NMRInversions.Γ(size(K, 2), order)])
+    f = vec(nonneg_lsq(A, [y; zeros(size(A, 1) - size(y, 1))], alg=:nnls))
+    r = K * f - y
+
+    return f, r, α
+
+end
+

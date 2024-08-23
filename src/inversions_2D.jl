@@ -27,7 +27,7 @@ function invert(
 
     end
 
-    results = invres2D(exptype, X_direct, X_indirect, f, r, calc_snr(Data), α)
+    results = invres2D(exptype, X_direct, X_indirect, f, r, calc_snr(Data), α,[],[])
 
     if savedata == true
         writeresults("inversion_results.txt", results)
