@@ -3,23 +3,23 @@ module gui_ext
 using NMRInversions, GLMakie, PolygonOps, LinearAlgebra, NativeFileDialog
 
 ```
-write a function that reads the file and plots everything, use it each time plot is updated,
-    including when  you firts plot it
+write a function that reads the file and plots everything, use it each time plot is updated, including when  you firts plot it
+alternatively, operate on the results struct and update the text file only when the user clicks on the export button
 ```
+
 
 function NMRInversions.select_peaks(resultsfile::String=pick_file(pwd()))
 
     inv_results = NMRInversions.readresults(resultsfile)
-    #     return NMRInversions.select_peaks(inv_results)
+    return NMRInversions.select_peaks(inv_results)
 
-    # end
+end
 
-    # function NMRInversions.select_peaks(inv_results::NMRInversions.invres2D)
+function NMRInversions.select_peaks(inv_results::NMRInversions.invres2D)
 
     dir = inv_results.X_dir
     indir = inv_results.X_indir
-    f = inv_results.f
-    F = collect(reshape(f, length(dir), length(indir))')
+    F = inv_results.F
 
     x = collect(1:length(indir))
     y = collect(1:length(dir))
@@ -55,11 +55,9 @@ function NMRInversions.select_peaks(resultsfile::String=pick_file(pwd()))
     tb = Textbox(f[3, 1], placeholder="Insert a title for the plot, then press enter.",
         width=300, reset_on_defocus=true)
 
-
     axmain = Axis(m[2, 1])
     axtop = Axis(m[1, 1])
     axright = Axis(m[2, 2])
-
 
     # Create another axis just to show the actual limits of the plot, 
     # since array indices are used on the previous axis
@@ -82,7 +80,6 @@ function NMRInversions.select_peaks(resultsfile::String=pick_file(pwd()))
     linkxaxes!(axmain, axtop)
     # linkxaxes!(axmain, ax3d)
     # linkyaxes!(axmain, ax3d)
-
 
     hidedecorations!(axtop)
     hidedecorations!(axright)
@@ -307,11 +304,10 @@ function NMRInversions.pubfig(file="inversion_results.txt"; title="", ppu=2)
     invres = NMRInversions.readresults(file)
     dir = invres.X_dir
     indir = invres.X_indir
-    f = invres.f
 
     x = collect(1:length(indir))
     y = collect(1:length(dir))
-    z = collect(reshape(f, length(dir), length(indir))')
+    z = invres.F
 
     #Look if there is any deleted selection
     open(file) do io
@@ -409,7 +405,7 @@ function NMRInversions.pubfig(file="inversion_results.txt"; title="", ppu=2)
         end
     end
 
-    Makie.save(joinpath(dirname(file),"Results.png"), m, px_per_unit=ppu)
+    Makie.save(joinpath(dirname(file), "Results.png"), m, px_per_unit=ppu)
 
 end
 

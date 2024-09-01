@@ -1,3 +1,16 @@
+"""
+    svd_kernel_struct(K,g,U,S,V)
+A structure containing the following elements:
+- `K`, the kernel matrix.
+- `G`, the data vector.
+- `U`, the left singular values matrix.
+- `S`, the singular values vector.
+- `V`, the right singular values matrix.
+
+To access the fields of a structure, we use the dot notation, 
+e.g. if the structure is called `a` and we want to access the kernel contained in there,
+we type `a.K`
+"""
 struct svd_kernel_struct
     K::AbstractMatrix
     g::AbstractVector
@@ -7,28 +20,35 @@ struct svd_kernel_struct
 end
 
 """
-Create a kernel for the inversion of 1D data.
-x is the experiment x axis (time or b factor etc.)
-X is the range for the output x axis (T1, T2, D etc.)
-The output is the K matrix.
+# Create a kernel for the inversion of 1D data.
+    create_kernel(seq, x, X)
+- `seq` is the pulse sequence (e.g. IR, CPMG, PGSE)
+- `x` is the experiment x axis (time or b factor etc.)
+- `X` is the range for the output x axis (T1, T2, D etc.)
+The output is a matrix, `K`.
 
-If data vector is provided, SVD is performed on the kernel, and the output is a "svd_kernel_struct" instead.
-If data vector is complex, the SNR is calculated and the SVD is automatically truncated accordingly.
 """
-function create_kernel(exptype::Type{<:inversion1D}, x::Vector, X::Vector)
-    if exptype == IR
+function create_kernel(seq::Type{<:pulse_sequence1D}, x::Vector, X::Vector)
+    if seq == IR
         kernel_eq = (t, T) -> 1 - 2 * exp(-t / T)
-    elseif exptype in [CPMG, PFG]
+    elseif seq in [CPMG, PFG]
         kernel_eq = (t, T) -> exp(-t / T)
     end
-
+    
     return kernel_eq.(x, X')
 end
 
-function create_kernel(exptype::Type{<:inversion1D}, x::Vector, X::Vector, g::Vector{<:Real})
-    if exptype == IR
+"""
+    create_kernel(seq, x, X, g)
+If data vector of real values is provided, SVD is performed on the kernel, and the output is a "svd_kernel_struct" instead.
+
+If data vector is complex, the SNR is calculated and the SVD is automatically truncated accordingly,
+to remove the "noisy" singular values.
+"""
+function create_kernel(seq::Type{<:pulse_sequence1D}, x::Vector, X::Vector, g::Vector{<:Real})
+    if seq == IR
         kernel_eq = (t, T) -> 1 - 2 * exp(-t / T)
-    elseif exptype in [CPMG, PFG]
+    elseif seq in [CPMG, PFG]
         kernel_eq = (t, T) -> exp(-t / T)
     end
 
@@ -41,10 +61,10 @@ function create_kernel(exptype::Type{<:inversion1D}, x::Vector, X::Vector, g::Ve
 
 end
 
-function create_kernel(exptype::Type{<:inversion1D}, x::Vector, X::Vector, g::Vector{<:Complex})
-    if exptype == IR
+function create_kernel(seq::Type{<:pulse_sequence1D}, x::Vector, X::Vector, g::Vector{<:Complex})
+    if seq == IR
         kernel_eq = (t, T) -> 1 - 2 * exp(-t / T)
-    elseif exptype in [CPMG, PFG]
+    elseif seq in [CPMG, PFG]
         kernel_eq = (t, T) -> exp(-t / T)
     end
 
@@ -66,10 +86,11 @@ function create_kernel(exptype::Type{<:inversion1D}, x::Vector, X::Vector, g::Ve
 end
 
 """
+    calc_snr(data)
 Calculate the Signal-to-Noise Ratio (SNR) from complex data,
-where the real part is mostly signal and the imaginary part is mostly noise.
-σ_n is the STD of the latter half of the imaginary signal 
-(former half might contain signal residues as well) 
+where the real part is (mostly) signal and the imaginary part is (mostly) noise.
+The STD of the latter half of the imaginary signal is used for the calculation 
+(former half might contain signal residues as well). 
 """
 function calc_snr(data::AbstractMatrix{<:Complex}) # For matrix data
 
@@ -96,12 +117,19 @@ end
 
 
 """
-Create a kernel for the inversion of 2D data.
-t_direct is the direct dimension acquisition parameter.
-t_indirect is the indirect dimension acquisition parameter.
-Raw is the 2D data matrix of complex data.
+# Generating a kernel for a 2D inversion
+    create_kernel(seq, x_direct, x_indirect, X_direct, X_indirect, Data)
+
+- `seq` is the 2D pulse sequence (e.g. IRCPMG)
+- `x_direct` is the direct dimension acquisition parameter (e.g. the times when you aquire CPMG echoes).
+- `x_indirect` is the indirect dimension acquisition parameter (e.g. all the delay times τ in your IR sequence).
+- `X_direct is output "range" of the inversion in the direct dimension (e.g. T₂ times in IRCPMG)`
+- `X_indirect is output "range" of the inversion in the indirect dimension (e.g. T₁ times in IRCPMG)`
+- `Data` is the 2D data matrix of complex data.
+The output is an [svd_kernel_struct](@docs)
+
 """
-function create_kernel(exptype::Type{<:inversion2D},
+function create_kernel(seq::Type{<:pulse_sequence2D},
     x_direct::AbstractVector, x_indirect::AbstractVector,
     X_direct::AbstractVector, X_indirect::AbstractVector,
     Data::AbstractMatrix{<:Complex})
@@ -115,7 +143,7 @@ function create_kernel(exptype::Type{<:inversion2D},
     end
 
     # Generate Kernels
-    if exptype == IRCPMG
+    if seq == IRCPMG
         K_dir = create_kernel(CPMG, x_direct, X_direct)
         K_indir = create_kernel(IR, x_indirect, X_indirect)
     end
@@ -134,22 +162,17 @@ function create_kernel(exptype::Type{<:inversion2D},
     sj = (last.(Tuple.(indices)))   # indirect dimension singular vector indices
 
     g̃ = diag(usv_indir.U[:, si]' * G' * usv_dir.U[:, sj])
-
     Ũ₀ = Array{Float64}(undef, 0, 0) # no such thing as U in this case, it is absorbed by g 
-
-    V1t = repeat(usv_dir.V[:, sj], size(usv_indir.V, 1), 1)
-    V2t = reshape(repeat(usv_indir.V[:, si]', size(usv_dir.V, 1), 1), ñ, size(V1t, 1))'
-    Ṽ₀ = V1t .* V2t
+    Ṽ₀ = repeat(usv_dir.V[:, sj], size(usv_indir.V, 1), 1) .* reshape(repeat(usv_indir.V[:, si]', size(usv_dir.V, 1), 1), ñ, size(V1t, 1))'
     K̃₀ = Diagonal(s̃) * Ṽ₀'
 
     return svd_kernel_struct(K̃₀, g̃, Ũ₀, s̃, Ṽ₀)
 end
 
 
-## Data compression
+## Data compression (NOT WORKING YET)
 
 function compress_data(t_direct::AbstractVector, G::AbstractMatrix, bins::Int=64)
-
     # Compress direct dimension to the length of bins
 
     # Use logarithmically spaced windows for a window average
@@ -168,7 +191,6 @@ function compress_data(t_direct::AbstractVector, G::AbstractMatrix, bins::Int=64
     W0 = Diagonal(inv(LowerTriangular(ones(Int, bins, bins))) * windows)
 
     # Window average matrix, A
-
     A = zeros(bins, size(G)[1])
     for i in 1:bins
         if i == 1
