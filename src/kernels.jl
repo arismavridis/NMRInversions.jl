@@ -15,20 +15,20 @@ The output is the K matrix.
 If data vector is provided, SVD is performed on the kernel, and the output is a "svd_kernel_struct" instead.
 If data vector is complex, the SNR is calculated and the SVD is automatically truncated accordingly.
 """
-function create_kernel(exptype::Type{<:inversion1D}, x::Vector, X::Vector)
-    if exptype == IR
+function create_kernel(seq::Type{<:pulse_sequence1D}, x::Vector, X::Vector)
+    if seq == IR
         kernel_eq = (t, T) -> 1 - 2 * exp(-t / T)
-    elseif exptype in [CPMG, PFG]
+    elseif seq in [CPMG, PFG]
         kernel_eq = (t, T) -> exp(-t / T)
     end
 
     return kernel_eq.(x, X')
 end
 
-function create_kernel(exptype::Type{<:inversion1D}, x::Vector, X::Vector, g::Vector{<:Real})
-    if exptype == IR
+function create_kernel(seq::Type{<:pulse_sequence1D}, x::Vector, X::Vector, g::Vector{<:Real})
+    if seq == IR
         kernel_eq = (t, T) -> 1 - 2 * exp(-t / T)
-    elseif exptype in [CPMG, PFG]
+    elseif seq in [CPMG, PFG]
         kernel_eq = (t, T) -> exp(-t / T)
     end
 
@@ -41,10 +41,10 @@ function create_kernel(exptype::Type{<:inversion1D}, x::Vector, X::Vector, g::Ve
 
 end
 
-function create_kernel(exptype::Type{<:inversion1D}, x::Vector, X::Vector, g::Vector{<:Complex})
-    if exptype == IR
+function create_kernel(seq::Type{<:pulse_sequence1D}, x::Vector, X::Vector, g::Vector{<:Complex})
+    if seq == IR
         kernel_eq = (t, T) -> 1 - 2 * exp(-t / T)
-    elseif exptype in [CPMG, PFG]
+    elseif seq in [CPMG, PFG]
         kernel_eq = (t, T) -> exp(-t / T)
     end
 
@@ -101,7 +101,7 @@ t_direct is the direct dimension acquisition parameter.
 t_indirect is the indirect dimension acquisition parameter.
 Raw is the 2D data matrix of complex data.
 """
-function create_kernel(exptype::Type{<:inversion2D},
+function create_kernel(seq::Type{<:pulse_sequence2D},
     x_direct::AbstractVector, x_indirect::AbstractVector,
     X_direct::AbstractVector, X_indirect::AbstractVector,
     Data::AbstractMatrix{<:Complex})
@@ -115,7 +115,7 @@ function create_kernel(exptype::Type{<:inversion2D},
     end
 
     # Generate Kernels
-    if exptype == IRCPMG
+    if seq == IRCPMG
         K_dir = create_kernel(CPMG, x_direct, X_direct)
         K_indir = create_kernel(IR, x_indirect, X_indirect)
     end

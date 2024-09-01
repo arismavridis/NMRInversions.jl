@@ -1,42 +1,45 @@
 struct input1D
-    exptype::Type{<:inversion1D}
+    seq::Type{<:pulse_sequence1D}
     x::AbstractVector{<:Real}
     y::AbstractVector
 end
 
 struct input2D
-    exptype::Type{<:inversion2D}
+    seq::Type{<:pulse_sequence2D}
     x_direct::AbstractVector{<:Real}
     x_indirect::AbstractVector{<:Real}
     data::AbstractMatrix
 end
 
 struct invres1D
-    exptype::Type{<:inversion1D}
+    seq::Type{<:pulse_sequence1D}
+    x::Vector
+    y::Vector
+    xfit::Vector
+    yfit::Vector
     X::Vector
     f::Vector
     r::Vector
     SNR::Real
     alpha::Real
-    xfit::Vector
-    yfit::Vector
+    wa::Real
 end
 
 struct invres2D
-    exptype::Type{<:inversion2D}
+    seq::Type{<:pulse_sequence2D}
     X_dir::Vector
     X_indir::Vector
-    f::Vector
+    F::Matrix
     r::Vector
     SNR::Real
     alpha::Real
-    keep_polygon::Vector
-    select_polygon::Vector
+    kp::Vector # Keep everyting within this Polygon
+    sp::Vector{Vector{Vector{Real}}} # Select everything within these Polygons
 end
 
-function import_1D(exptype::Type{<:inversion1D}, file=pick_file(pwd()))
+function import_1D(seq::Type{<:pulse_sequence1D}, file=pick_file(pwd()))
     x, y = import_1D(file)
-    return input1D(exptype, x, y)
+    return input1D(seq, x, y)
 end
 
 function import_1D(file=pick_file(pwd()))
@@ -45,7 +48,6 @@ function import_1D(file=pick_file(pwd()))
     y = vec(data[:, 2])
     return x, y
 end
-
 
 function read_acqu(filename, parameter)
 
@@ -92,17 +94,17 @@ function import_spinsolve(directory::String=pick_folder(pwd()))
     end
 
     if experiment == "T1IRT2"
-        exptype = IRCPMG
+        seq = IRCPMG
     end
 
-    return input2D(exptype, t_direct, t_indirect, Data)
+    return input2D(seq, t_direct, t_indirect, Data)
 
 end
 
 function writeresults(filedir::String, res::invres1D)
 
     open(filedir, "w") do io
-        write(io, "Pulse Sequence : " * string(res.exptype) * "\n")
+        write(io, "Pulse Sequence : " * string(res.seq) * "\n")
         write(io, "SNR : " * string(res.SNR) * "\n")
         write(io, "alpha : " * string(res.alpha) * "\n")
         write(io, "X : " * join(res.X, ", ") * "\n")
@@ -112,42 +114,42 @@ function writeresults(filedir::String, res::invres1D)
 
 end
 
-function writeresults(filedir::String, res::invres2D)
+# function writeresults(filedir::String, res::invres2D)
 
-    open(filedir, "w") do io
-        write(io, "Pulse Sequence : " * string(res.exptype) * "\n")
-        write(io, "SNR : " * string(res.SNR) * "\n")
-        write(io, "alpha : " * string(res.alpha) * "\n")
-        write(io, "Direct Dimension : " * join(res.X_dir, ", ") * "\n")
-        write(io, "Indirect Dimension : " * join(res.X_indir, ", ") * "\n")
-        write(io, "Inversion Results : " * join(res.f, ", ") * "\n")
-        write(io, "Residuals : " * join(res.r, ", ") * "\n")
-    end
+#     open(filedir, "w") do io
+#         write(io, "Pulse Sequence : " * string(res.seq) * "\n")
+#         write(io, "SNR : " * string(res.SNR) * "\n")
+#         write(io, "alpha : " * string(res.alpha) * "\n")
+#         write(io, "Direct Dimension : " * join(res.X_dir, ", ") * "\n")
+#         write(io, "Indirect Dimension : " * join(res.X_indir, ", ") * "\n")
+#         write(io, "Inversion Results : " * join(res.f, ", ") * "\n")
+#         write(io, "Residuals : " * join(res.r, ", ") * "\n")
+#     end
 
-end
+# end
 
-function readresults(file::String=pick_file(pwd()))
+# function readresults(file::String=pick_file(pwd()))
 
-    open(file) do io
+#     open(file) do io
 
-        readuntil(io, "Pulse Sequence : ")
-        PulseSequence = eval(Meta.parse(readline(io)))
-        readuntil(io, "SNR : ")
-        SNR = parse.(Float64, readline(io))
-        readuntil(io, "alpha : ")
-        α = parse.(Float64, readline(io))
-        readuntil(io, "Direct Dimension : ")
-        dir = parse.(Float64, split(readline(io), ','))
-        readuntil(io, "Indirect Dimension : ")
-        indir = parse.(Float64, split(readline(io), ','))
-        readuntil(io, "Inversion Results : ")
-        f = parse.(Float64, split(readline(io), ','))
-        readuntil(io, "Residuals : ")
-        r = parse.(Float64, split(readline(io), ','))
+#         readuntil(io, "Pulse Sequence : ")
+#         PulseSequence = eval(Meta.parse(readline(io)))
+#         readuntil(io, "SNR : ")
+#         SNR = parse.(Float64, readline(io))
+#         readuntil(io, "alpha : ")
+#         α = parse.(Float64, readline(io))
+#         readuntil(io, "Direct Dimension : ")
+#         dir = parse.(Float64, split(readline(io), ','))
+#         readuntil(io, "Indirect Dimension : ")
+#         indir = parse.(Float64, split(readline(io), ','))
+#         readuntil(io, "Inversion Results : ")
+#         f = parse.(Float64, split(readline(io), ','))
+#         readuntil(io, "Residuals : ")
+#         r = parse.(Float64, split(readline(io), ','))
 
-        return invres2D(PulseSequence, dir, indir, f, r, SNR, α, [], [])
-    end
-end
+#         return invres2D(PulseSequence, dir, indir, f, r, SNR, α, [], [])
+#     end
+# end
 
 
 function entropy(u::AbstractArray, p::Tuple)
@@ -256,12 +258,11 @@ function import_geospec(filedir::String=pick_file(pwd()))
         105 => PFG,
         106 => IRCPMG,
         108 => PFGCPMG
-        # ,110 => CPMGCPMG
     )
 
-    exptype = typedict[pulse_sequence_number]
+    seq = typedict[pulse_sequence_number]
 
-    if exptype in [IR, IRCPMG]
+    if seq in [IR, IRCPMG]
         y_re, y_im, ϕ = autophase(y_re, y_im, -1)
     else
         y_re, y_im, ϕ = autophase(y_re, y_im, 1)
@@ -269,20 +270,20 @@ function import_geospec(filedir::String=pick_file(pwd()))
 
     display("Data phase corrected by $(round(ϕ,digits=3)) radians.")
 
-    if exptype == IRCPMG
+    if seq == IRCPMG
 
         return input2D(IRCPMG, data[1:dimensions[1], 1] .* (1 / 1000), data[1:dimensions[1]:end, 2] .* (1 / 1000), reshape(complex.(y_re, y_im), dimensions[1], dimensions[2]))
 
-    elseif exptype == PFGCPMG
+    elseif seq == PFGCPMG
 
         return input2D(PFGCPMG, data[1:dimensions[1], 1], data[1:dimensions[1]:end, 2] .* (1 / 1000), reshape(complex.(y_re, y_im), dimensions[1], dimensions[2]))
 
-    elseif exptype == PFG
+    elseif seq == PFG
 
-        return input1D(exptype, data[:, 1], complex.(y_re, y_im))
+        return input1D(seq, data[:, 1], complex.(y_re, y_im))
 
-    elseif exptype in [IR, CPMG]
+    elseif seq in [IR, CPMG]
 
-        return input1D(exptype, data[:, 1] .* (1 / 1000), complex.(y_re, y_im)) # Converts time to seconds
+        return input1D(seq, data[:, 1] .* (1 / 1000), complex.(y_re, y_im)) # Converts time to seconds
     end
 end

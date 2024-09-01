@@ -17,7 +17,7 @@ function hessian_f(H, c, p=(α, data, K))
 end
 
 
-function solve_regularization(K::AbstractMatrix, g::AbstractVector, α::Real, solver::Type{song}, order::Int=0)
+function solve_regularization(K::AbstractMatrix, g::AbstractVector, α::Real, solver::Type{brd}, order::Int=0)
 
     optf = Optimization.OptimizationFunction(objective_f, grad=gradient_f, hess=hessian_f)
     prob = Optimization.OptimizationProblem(optf, ones(size(K, 1)), (α, g, K))
@@ -28,6 +28,3 @@ function solve_regularization(K::AbstractMatrix, g::AbstractVector, α::Real, so
     return f, r
 
 end
-
-
-

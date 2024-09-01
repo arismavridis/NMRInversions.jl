@@ -1,4 +1,3 @@
-
 function solve_regularization(K::AbstractMatrix, g::AbstractVector, α::Real, solver::Type{optim_nnls}, order::Int=0)
 
     A = sparse([K; √(α) .* NMRInversions.Γ(size(K, 2), order)])

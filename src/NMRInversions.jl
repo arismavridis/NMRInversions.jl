@@ -10,37 +10,38 @@ import Optimization, OptimizationOptimJL
 
 """
 to do list:
-- add L curve method 
+- fix L curve method 
 - add gcv for reci method
 - consider RegularizedLeastSquares.jl
+- fix readresults and writeresults
+- add 1D gui
 """
 
 ## The following are custom types for multiple dispatch purposes
 
 # Pulse sequences
-abstract type inversion1D end
-abstract type inversion2D end
-struct IR <: inversion1D end
-struct CPMG <: inversion1D end
-struct PFG <: inversion1D end
-struct IRCPMG <: inversion2D end
-struct PFGCPMG <: inversion2D end
-export inversion1D, inversion2D, IR, CPMG, PFG, IRCPMG, PFGCPMG
+abstract type pulse_sequence1D end
+abstract type pulse_sequence2D end
+struct IR <: pulse_sequence1D end
+struct CPMG <: pulse_sequence1D end
+struct PFG <: pulse_sequence1D end
+struct IRCPMG <: pulse_sequence2D end
+struct PFGCPMG <: pulse_sequence2D end
+export pulse_sequence1D, pulse_sequence2D, IR, CPMG, PFG, IRCPMG, PFGCPMG
 
 # Supported solvers 
 abstract type regularization_solver end 
-struct song <: regularization_solver end
+struct brd <: regularization_solver end
 struct ripqp <: regularization_solver end
 struct pdhgm <: regularization_solver end
 struct optim_nnls <: regularization_solver end
-export regularization_solver, song, ripqp, pdhgm, optim_nnls
+export regularization_solver, brd, ripqp, pdhgm, optim_nnls
 
 # Supported methods to determine regularization α parameter
 abstract type smoothing_optimizer end
 struct gcv <: smoothing_optimizer end
-struct brd <: smoothing_optimizer end
 struct lcurve <: smoothing_optimizer end
-export smoothing_optimizer, gcv, brd, lcurve
+export smoothing_optimizer, gcv, lcurve
 
 
 ## Include the package files 
@@ -49,7 +50,7 @@ include("kernels.jl")
 include("misc.jl")
 include("inversions_1D.jl")
 include("inversions_2D.jl")
-include("tikhonov_song.jl")
+include("tikhonov_brd.jl")
 include("L1_regularization.jl")
 include("nnls.jl")
 
