@@ -38,6 +38,7 @@ function create_kernel(seq::Type{<:pulse_sequence1D}, x::Vector, X::Vector)
     return kernel_eq.(x, X')
 end
 
+<<<<<<< HEAD
 """
     create_kernel(seq, x, X, g)
 If data vector of real values is provided, SVD is performed on the kernel, and the output is a "svd_kernel_struct" instead.
@@ -45,6 +46,8 @@ If data vector of real values is provided, SVD is performed on the kernel, and t
 If data vector is complex, the SNR is calculated and the SVD is automatically truncated accordingly,
 to remove the "noisy" singular values.
 """
+=======
+>>>>>>> 4910a925a3456bccf09a917be55575532cb95d3c
 function create_kernel(seq::Type{<:pulse_sequence1D}, x::Vector, X::Vector, g::Vector{<:Real})
     if seq == IR
         kernel_eq = (t, T) -> 1 - 2 * exp(-t / T)
