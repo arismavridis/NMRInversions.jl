@@ -16,11 +16,7 @@ function test1D(seq::Type{<:pulse_sequence1D})
     g = K * f_custom
     y = g + 0.001 * maximum(g) .* randn(length(x))
 
-<<<<<<< HEAD
     results = invert(seq, x, y, alpha=gcv)
-=======
-    results = invert(seq, x, y, α=gcv)
->>>>>>> 4910a925a3456bccf09a917be55575532cb95d3c
 
     return norm(results.f - f_custom) < 0.5
 end
@@ -125,7 +121,7 @@ function testT1T2()
     data = K1 * F_original * K2'
     data = complex.(data, 0.001 .* maximum(real(data)) .* randn(size(data)))
 
-    results = invert(IRCPMG, x_direct, x_indirect, data, α=0.01, rdir=(-5, 1, 64), rindir=(-5, 1, 64), savedata=false)
+    results = invert(IRCPMG, x_direct, x_indirect, data, alpha=0.01, rdir=(-5, 1, 64), rindir=(-5, 1, 64), savedata=false)
 
     # K = create_kernel(IRCPMG, x_direct, x_indirect,X_direct, X_indirect,data)
     # A = SparseArrays.sparse([K.K; √(1) .* NMRInversions.Γ(size(K.K, 2), 0)])
@@ -149,7 +145,6 @@ function test_phase_correction(plots=false)
     # Correct the phase
     Rₙ, Iₙ, ϕc = NMRInversions.autophase(Re_shifted, Im_shifted, 1)
 
-<<<<<<< HEAD
     ## Plots for sanity check (using Plots.jl)
     if plots == true
         p1 = plot([Re_original, Im_original], label=["Original real" "Original Imaginary"])
@@ -163,19 +158,6 @@ function test_phase_correction(plots=false)
         p4 = vline!(p4, [ϕc], label="corrected phase")
         display(plot(p1, p2, p3, p4))
     end
-=======
-    ## Plots for sanity check
-    # p1 = plot([Re_original, Im_original], label=["Original real" "Original Imaginary"])
-    # p2 = plot([Re_shifted, Im_shifted], label=["Dephased real" "Dephased Imaginary"])
-    # p3 = plot([Rₙ, Iₙ], label=["Corrected real" "Corrected Imaginary"])
-    # ϕ_range = range(0, 2π, 20000)
-    # Re1_vs_φ = Re_shifted[1] .* cos.(ϕ_range) - Im_shifted[1] .* sin.(ϕ_range)
-    # Im_sum_vs_φ = [im_cost([ϕ], (Re_shifted, Im_shifted)) for ϕ in ϕ_range]
-    # p4 = plot(ϕ_range, Re1_vs_φ, xlabel="ϕ", label="Re[1]")
-    # p4 = plot!(ϕ_range, (Im_sum_vs_φ ./ maximum(Im_sum_vs_φ)) .* maximum(Re1_vs_φ), xlabel="ϕ", label="sum(im.^2)", legend=:topleft)
-    # p4 = vline!(p4, [ϕc], label="corrected phase")
-    # display(plot(p1, p2, p3, p4))
->>>>>>> 4910a925a3456bccf09a917be55575532cb95d3c
 
     display("The correction error is $(2π - (ϕd + ϕc)) radians")
 

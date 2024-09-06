@@ -32,11 +32,9 @@ export pulse_sequence1D, pulse_sequence2D, IR, CPMG, PFG, IRCPMG, PFGCPMG
 # Supported solvers 
 abstract type regularization_solver end 
 struct brd <: regularization_solver end
-struct brd <: regularization_solver end
 struct ripqp <: regularization_solver end
 struct pdhgm <: regularization_solver end
 struct optim_nnls <: regularization_solver end
-export regularization_solver, brd, ripqp, pdhgm, optim_nnls
 export regularization_solver, brd, ripqp, pdhgm, optim_nnls
 
 # Supported methods to determine regularization α parameter

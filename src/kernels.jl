@@ -34,11 +34,10 @@ function create_kernel(seq::Type{<:pulse_sequence1D}, x::Vector, X::Vector)
     elseif seq in [CPMG, PFG]
         kernel_eq = (t, T) -> exp(-t / T)
     end
-    
+
     return kernel_eq.(x, X')
 end
 
-<<<<<<< HEAD
 """
     create_kernel(seq, x, X, g)
 If data vector of real values is provided, SVD is performed on the kernel, and the output is a "svd_kernel_struct" instead.
@@ -46,8 +45,6 @@ If data vector of real values is provided, SVD is performed on the kernel, and t
 If data vector is complex, the SNR is calculated and the SVD is automatically truncated accordingly,
 to remove the "noisy" singular values.
 """
-=======
->>>>>>> 4910a925a3456bccf09a917be55575532cb95d3c
 function create_kernel(seq::Type{<:pulse_sequence1D}, x::Vector, X::Vector, g::Vector{<:Real})
     if seq == IR
         kernel_eq = (t, T) -> 1 - 2 * exp(-t / T)
@@ -166,12 +163,18 @@ function create_kernel(seq::Type{<:pulse_sequence2D},
 
     g̃ = diag(usv_indir.U[:, si]' * G' * usv_dir.U[:, sj])
     Ũ₀ = Array{Float64}(undef, 0, 0) # no such thing as U in this case, it is absorbed by g 
-    Ṽ₀ = repeat(usv_dir.V[:, sj], size(usv_indir.V, 1), 1) .* reshape(repeat(usv_indir.V[:, si]', size(usv_dir.V, 1), 1), ñ, size(V1t, 1))'
+    Ṽ₀ = repeat(usv_dir.V[:, sj], size(usv_indir.V, 1), 1) .* reshape(repeat(usv_indir.V[:, si]', size(usv_dir.V, 1), 1), ñ, size(usv_indir.V,1)*size(usv_dir.V,1) )'
     K̃₀ = Diagonal(s̃) * Ṽ₀'
 
     return svd_kernel_struct(K̃₀, g̃, Ũ₀, s̃, Ṽ₀)
 end
 
+inp = import_geospec("/otherdata/9847zg/stratum_nmr/plug9_IRCPMG.txt")
+Data = inp.data
+x_direct = inp.x_direct
+x_indirect = inp.x_indirect
+X_direct = exp10.(range(-5, 1, 128))
+X_indirect = exp10.(range(-5, 1, 128))
 
 ## Data compression (NOT WORKING YET)
 
