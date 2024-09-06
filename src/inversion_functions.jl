@@ -104,7 +104,7 @@ Instead of these positional arguments, you can use a single [input1D](@docs) str
 function invert(
     seq::Type{<:pulse_sequence2D}, x_direct::AbstractVector, x_indirect::AbstractVector, Data::AbstractMatrix;
     alpha=gcv, rdir=(-5, 1, 100), rindir=(-5, 1, 100),
-    solver=brd, order=0, savedata::Bool=true)
+    solver=brd, order=0, savedata::Bool=false)
 
     if typeof(rdir) == Tuple{Int,Int,Int}
         X_direct = exp10.(range(rdir...))

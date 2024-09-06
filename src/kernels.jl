@@ -206,7 +206,6 @@ function compress_data(t_direct::AbstractVector, G::AbstractMatrix, bins::Int=64
         end
     end
 
-
     t_direct = A * t_direct # Replace old direct time array with compressed one
     G = A * G # Replace old G with compressed one
 

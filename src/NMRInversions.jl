@@ -12,7 +12,6 @@ import Optimization, OptimizationOptimJL
 to do list:
 - fix L curve method 
 - add gcv for reci method
-- consider RegularizedLeastSquares.jl
 - fix readresults and writeresults
 - add 1D gui
 """
@@ -42,8 +41,6 @@ abstract type smoothing_optimizer end
 struct gcv <: smoothing_optimizer end
 struct lcurve <: smoothing_optimizer end
 export smoothing_optimizer, gcv, lcurve
-export smoothing_optimizer, gcv, lcurve
-
 
 ## Include the package files 
 include("inversions_io.jl")

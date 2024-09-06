@@ -64,10 +64,10 @@ A structure containing the following elements:
 - `seq` is the 2D pulse sequence (e.g. IRCPMG)
 - `X_dir`, the x values of the direct dimension.
 - `X_indir`, the x values of the indirect dimension.
-- `F`, the inversion results.
+- `F`, the inversion results as a matrix.
 - `r`, the residuals.
 - `SNR`, the signal-to-noise ratio.
-- `α`, the regularization parameter.
+- `alpha`, the regularization parameter.
 - `kp`, a polygon containing all the values to be kept (basically everything excluding artefacts.).
 - `sp`, the selection polygons (e.g. when you want to select some peaks in a T₁-T₂ map).
 
@@ -106,7 +106,12 @@ function read_acqu(filename, parameter)
     return replace(p, "\"" => "")
 end
 
-
+"""
+    import_spinsolve(directory)
+Import data from a Spinsolve experiment. 
+The function reads the acqu.par.bak file to get the acquisition parameters, and the .dat file to get the data. 
+The function returns an `input2D` structure.
+"""
 function import_spinsolve(directory::String=pick_folder(pwd()))
 
     directory = abspath(directory)
@@ -148,18 +153,40 @@ function import_spinsolve(directory::String=pick_folder(pwd()))
 
 end
 
-function writeresults(filedir::String, res::invres1D)
 
-    open(filedir, "w") do io
-        write(io, "Pulse Sequence : " * string(res.seq) * "\n")
-        write(io, "SNR : " * string(res.SNR) * "\n")
-        write(io, "alpha : " * string(res.alpha) * "\n")
-        write(io, "X : " * join(res.X, ", ") * "\n")
-        write(io, "Inversion Results : " * join(res.f, ", ") * "\n")
-        write(io, "Residuals : " * join(res.r, ", ") * "\n")
+function writeresults(results::Union{invres1D,invres2D}, dir)
+
+    open(dir, "w") do io
+        for field in fieldnames(typeof(results))
+            data = getfield(results, field)
+            datastring = isa(data, Array) ? join(data, ", ") : string(getfield(results, field))
+            write(io, String(field) * " : " * datastring * "\n")
+        end
     end
 
 end
+
+function readresults(dir::String)
+
+    open(dir) do io
+
+        readuntil(io, "seq : ")
+        seq = eval(Meta.parse(readline(io)))
+        supertype(seq) == pulse_sequence1D ? datatype = invres1D : datatype = invres2D
+
+        for field in fieldnames(datatype)
+           readuntil(io, field * " : ")
+
+        end
+
+    end
+
+end
+
+# a = import_geospec("/otherdata/9847zg/stratum_nmr/plug9_IRCPMG.txt")
+# b = invert(a, alpha=10)
+writeresults(b, "test.txt")
+push!(b.sp,[[1,1],[1,2],[2,2],[2,1]])
 
 # function writeresults(filedir::String, res::invres2D)
 
@@ -239,8 +266,10 @@ function minimize_entropy(Re, Im, γ)
 
 end
 
-
-function im_cost(u, p)  # sum of squares of the imaginary Part
+"""
+Sum of squares of the imaginary Part
+"""
+function im_cost(u, p)
 
     Re = p[1]
     Im = p[2]
@@ -265,10 +294,44 @@ end
 
 """
 """
-function autophase(results)
-    
+function autophase(input::input1D)
+    re = real.(input.y)
+    im = imag.(input.y)
+    seq = input.seq
+
+    if seq in [IR, IRCPMG]
+        re, im, ϕ = autophase(re, im, -1)
+        return input1D(seq, input.x, complex.(re, im))
+    else
+        re, im, ϕ = autophase(re, im, 1)
+        return input1D(seq, input.x, complex.(re, im))
+    end
+
 end
 
+"""
+"""
+function autophase(input::input2D)
+    re = real.(input.data)
+    im = imag.(input.data)
+    seq = input.seq
+
+    if seq in [IRCPMG]
+        re, im, ϕ = autophase(re, im, -1)
+        return input2D(seq, input.x_direct, input.x_indirect, complex.(re, im))
+    else
+        error("This function is not yet implemented for this pulse sequence. Please submit an issue on GitHub.")
+    end
+
+end
+
+"""
+    autophase(re, im, startingpoint)
+Phase correction for NMR signals.
+- `re` is the real part of the signal.
+- `im` is the imaginary part of the signal.
+- `startingpoint` is a value between -1 and 1. It basically determines what should the 1st point of the real part be (e.g. -1 for IR, 1 for CPMG).
+"""
 function autophase(re, im, startingpoint::Real) # startingpoint is a value between -1 and 1
 
     ϕ_range = range(0, 2π, 500)
