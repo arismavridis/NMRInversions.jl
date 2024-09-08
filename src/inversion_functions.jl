@@ -3,7 +3,7 @@
     invert(seq, x, y [, lims, alpha, order, solver])
 
 This function will build a kernel and use it to perform an inversion using the algorithm of your choice.
-The output is an [invres2D](@docs) structure.
+The output is an [invres1D](@docs) structure.
 
  Necessary (positional) arguments:
 - `seq` is the 1D pulse sequence (e.g. IR, CPMG, PGSE)
@@ -20,7 +20,7 @@ Instead of these positional arguments, you can use a single [input1D](@docs) str
 
 """
 function invert(seq::Type{<:pulse_sequence1D}, x::AbstractArray, y::Vector;
-    lims=(-5, 1, 128), alpha=gcv, order=0, solver=brd, savedata=false)
+    lims=(-5, 1, 128), alpha=gcv, order=0, solver=brd)
 
     if typeof(lims) == Tuple{Int,Int,Int}
         X = exp10.(range(lims...))
@@ -47,13 +47,6 @@ function invert(seq::Type{<:pulse_sequence1D}, x::AbstractArray, y::Vector;
     else
         error("alpha must be a real number or gcv")
 
-    end
-
-    if savedata == true
-        open("delim_file.txt", "w") do io
-            writedlm(io, ["inv_x" "inv_y"])
-            writedlm(io, [T_range f])
-        end
     end
 
     x_fit = collect(range(0, x[end] + 0.1 * x[end], 128))
@@ -89,7 +82,7 @@ The output is an [invres2D](@docs) structure.
 - `x_indirect` is the indirect dimension acquisition parameter (e.g. all the delay times τ in your IR sequence).
 - `Data` is the 2D data matrix of complex data.
 
-Instead of these positional arguments, you can use a single [input1D](@docs) structure, which contains the same information.
+Instead of these positional arguments, you can use a single [input2D](@docs) structure, which contains the same information.
 
  Optional (keyword) arguments:
 - `rdir` determines the output "range" of the inversion in the direct dimension (e.g. T₂ times in IRCPMG)
@@ -104,7 +97,7 @@ Instead of these positional arguments, you can use a single [input1D](@docs) str
 function invert(
     seq::Type{<:pulse_sequence2D}, x_direct::AbstractVector, x_indirect::AbstractVector, Data::AbstractMatrix;
     alpha=gcv, rdir=(-5, 1, 100), rindir=(-5, 1, 100),
-    solver=brd, order=0, savedata::Bool=false)
+    solver=brd, order=0)
 
     if typeof(rdir) == Tuple{Int,Int,Int}
         X_direct = exp10.(range(rdir...))
@@ -141,12 +134,7 @@ function invert(
 
     F = reshape(f, length(X_direct), length(X_indirect))
 
-    results = invres2D(seq, X_direct, X_indirect, F, r, calc_snr(Data), α, [], [])
-
-    if savedata == true
-        writeresults("inversion_results.txt", results)
-        display("Data saved as inversion_results.txt in $(pwd())")
-    end
+    results = invres2D(seq, X_direct, X_indirect, F, r, calc_snr(Data), α, ones(size(F)), [])
 
     return results
 

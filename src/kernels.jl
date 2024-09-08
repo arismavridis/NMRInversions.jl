@@ -25,6 +25,7 @@ end
 - `seq` is the pulse sequence (e.g. IR, CPMG, PGSE)
 - `x` is the experiment x axis (time or b factor etc.)
 - `X` is the range for the output x axis (T1, T2, D etc.)
+
 The output is a matrix, `K`.
 
 """
@@ -86,37 +87,6 @@ function create_kernel(seq::Type{<:pulse_sequence1D}, x::Vector, X::Vector, g::V
 end
 
 """
-    calc_snr(data)
-Calculate the Signal-to-Noise Ratio (SNR) from complex data,
-where the real part is (mostly) signal and the imaginary part is (mostly) noise.
-The STD of the latter half of the imaginary signal is used for the calculation 
-(former half might contain signal residues as well). 
-"""
-function calc_snr(data::AbstractMatrix{<:Complex}) # For matrix data
-
-    real_data = real.(data)
-    imag_data = imag.(data)
-
-    noise = imag_data[(floor(Int64, (size(imag_data, 1) / 2))):end, :]
-    σ_n = sqrt(sum((noise .- sum(noise) / length(noise)) .^ 2) / (length(noise) - 1))
-    SNR = maximum(abs.(real_data)) / σ_n
-
-    return SNR
-end
-function calc_snr(data::AbstractVector{<:Complex}) # For vector data
-
-    real_data = real.(data)
-    imag_data = imag.(data)
-
-    noise = imag_data[(floor(Int64, (size(imag_data, 1) / 2))):end]
-    σ_n = sqrt(sum((noise .- sum(noise) / length(noise)) .^ 2) / (length(noise) - 1))
-    SNR = maximum(abs.(real_data)) / σ_n
-
-    return SNR
-end
-
-
-"""
 # Generating a kernel for a 2D inversion
     create_kernel(seq, x_direct, x_indirect, X_direct, X_indirect, Data)
 
@@ -169,48 +139,3 @@ function create_kernel(seq::Type{<:pulse_sequence2D},
     return svd_kernel_struct(K̃₀, g̃, Ũ₀, s̃, Ṽ₀)
 end
 
-inp = import_geospec("/otherdata/9847zg/stratum_nmr/plug9_IRCPMG.txt")
-Data = inp.data
-x_direct = inp.x_direct
-x_indirect = inp.x_indirect
-X_direct = exp10.(range(-5, 1, 128))
-X_indirect = exp10.(range(-5, 1, 128))
-
-## Data compression (NOT WORKING YET)
-
-function compress_data(t_direct::AbstractVector, G::AbstractMatrix, bins::Int=64)
-    # Compress direct dimension to the length of bins
-
-    # Use logarithmically spaced windows for a window average
-    windows = zeros(bins)
-
-    x = 1
-    while windows[1] == 0
-        windows = (exp10.(range(log10(x), log10(10), bins))) # make log array
-        windows = (windows / sum(windows)) * size(G)[1] # normalize it so that elements add up to correct size
-        windows = floor.(Int, LowerTriangular(ones(Int, bins, bins)) * windows) # make valid indices
-        x += 1
-        #sanity check, this sum below should be almost equal to the uncompressed array size
-        #sum(windows[2:end]-windows[1:end-1]) 
-    end
-
-    W0 = Diagonal(inv(LowerTriangular(ones(Int, bins, bins))) * windows)
-
-    # Window average matrix, A
-    A = zeros(bins, size(G)[1])
-    for i in 1:bins
-        if i == 1
-            A[i, 1:windows[1]] .= 1 / diag(W0)[i]
-        else
-            A[i, (windows[i-1]+1):windows[i]] .= 1 / diag(W0)[i]
-        end
-    end
-
-    t_direct = A * t_direct # Replace old direct time array with compressed one
-    G = A * G # Replace old G with compressed one
-
-    # sanity check plot:
-    usv1 = svd(sqrt(W0) * K1) #paper (13)
-    # surface(G, camera=(110, 25), xscale=:log10)
-
-end

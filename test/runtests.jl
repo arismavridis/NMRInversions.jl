@@ -121,7 +121,7 @@ function testT1T2()
     data = K1 * F_original * K2'
     data = complex.(data, 0.001 .* maximum(real(data)) .* randn(size(data)))
 
-    results = invert(IRCPMG, x_direct, x_indirect, data, alpha=0.01, rdir=(-5, 1, 64), rindir=(-5, 1, 64), savedata=false)
+    results = invert(IRCPMG, x_direct, x_indirect, data, alpha=0.01, rdir=(-5, 1, 64), rindir=(-5, 1, 64))
 
     # K = create_kernel(IRCPMG, x_direct, x_indirect,X_direct, X_indirect,data)
     # A = SparseArrays.sparse([K.K; √(1) .* NMRInversions.Γ(size(K.K, 2), 0)])
@@ -131,6 +131,30 @@ function testT1T2()
     return LinearAlgebra.norm(results.F - F_original) < 0.5
 
 end
+
+
+
+function julia_logo_data()
+
+    x = range(1, 10, 50)
+    y = copy(x)
+    C1 = [5.15, 4.2]
+    C2 = [7, 6.4]
+    C3 = C1 + [cosd(-60) -sind(-60); sind(-60) cosd(-60)] * (C2 - C1)
+    C = [C1, C2, C3]
+
+    data = []
+
+    for i in 1:3 
+        A = [exp.((-((x - C[i][1])^2 + (y - C[i][2])^2)) / 1.75) / 100 for x in x, y in y]
+        push!(data, A)
+    end
+
+    return sum(data)
+end
+
+
+
 
 function test_phase_correction(plots=false)
 
