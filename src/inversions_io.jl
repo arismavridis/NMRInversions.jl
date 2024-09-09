@@ -29,7 +29,7 @@ struct input2D
 end
 
 """
-    invres1D(seq, x, y, xfit, yfit, X, f, r, SNR, α, wa)
+    inv_out_1D(seq, x, y, xfit, yfit, X, f, r, SNR, α, wa)
 A structure containing the following elements:
 - `seq` is the 1D pulse sequence (e.g. IR, CPMG, PGSE)
 - `x`, the x values of the measurement (e.g time for relaxation or b-factor for diffusion).
@@ -44,7 +44,7 @@ A structure containing the following elements:
 - `wa`, the weighted average of the inversion results (e.g. the mean relaxation time or diffusion coefficient).
 
 """
-struct invres1D
+struct inv_out_1D
     seq::Type{<:pulse_sequence1D}
     x::Vector
     y::Vector
@@ -60,7 +60,7 @@ end
 
 
 """
-    invres2D(seq, X_dir, X_indir, F, r, SNR, α, del_pol, sel_pol)
+    inv_out_2D(seq, X_dir, X_indir, F, r, SNR, α, del_pol, sel_pol)
 A structure containing the following elements:
 - `seq` is the 2D pulse sequence (e.g. IRCPMG)
 - `X_dir`, the x values of the direct dimension.
@@ -73,7 +73,7 @@ A structure containing the following elements:
 - `selections`, the selection masks (e.g. when you want to highlight some peaks in a T₁-T₂ map).
 
 """
-struct invres2D
+struct inv_out_2D
     seq::Type{<:pulse_sequence2D}
     X_dir::Vector
     X_indir::Vector
@@ -81,16 +81,25 @@ struct invres2D
     r::Vector
     SNR::Real
     alpha::Real
-    filter::Matrix 
-    selections::Vector{Vector{Vector}} 
+    filter::Matrix
+    selections::Vector{Vector{Vector}}
 end
 
-function import_1D(seq::Type{<:pulse_sequence1D}, file=pick_file(pwd()))
-    x, y = import_1D(file)
+"""
+    import_csv(seq, file)
+Import data from a CSV file.
+The function reads the file and returns an `input1D` structure.
+- `seq` is the 1D pulse sequence (e.g. IR, CPMG, PGSE)
+- `file` is the path to the CSV file which contains the data (x, y) in two respective columns.
+\
+The function can also be called with only the seq argument, in which case a file dialog will open to select the file.
+"""
+function import_csv(seq::Type{<:pulse_sequence1D}, file=pick_file(pwd()))
+    x, y = import_csv(file)
     return input1D(seq, x, y)
 end
 
-function import_1D(file=pick_file(pwd()))
+function import_csv(file=pick_file(pwd()))
     data = readdlm(file, ',')
     x = vec(data[:, 1])
     y = vec(data[:, 2])
@@ -107,55 +116,85 @@ function read_acqu(filename, parameter)
     return replace(p, "\"" => "")
 end
 
+
 """
-    import_spinsolve(directory)
+    import_spinsolve(files)
 Import data from a Spinsolve experiment. 
+Two paths must be provided as follows (order is not important):
+- `files` = [.../datafile.csv , .../acqu.par.bak] 
+\
+Calling this function without an argument by typing `import_spinsolve()` will open a file dialog to select the files.
 The function reads the acqu.par.bak file to get the acquisition parameters, and the .dat file to get the data. 
 The function returns an `input2D` structure.
 """
-function import_spinsolve(directory::String=pick_folder(pwd()))
+function import_spinsolve(files=pick_multi_file(pwd()))
 
-    directory = abspath(directory)
-    cd(directory)
-
-    # Read experiment parameters
-    acqu = readdlm(joinpath(directory, "acqu.par.bak"))
-    n_echoes = acqu[21, 3]
-    t_echo = acqu[12, 3] * 1e-6
-    τ_steps = acqu[36, 3]
-    τ_min = acqu[20, 3] * 1e-3
-    τ_max = acqu[19, 3] * 1e-3
-    experiment = acqu[13, 3]
-
-    Raw = readdlm(joinpath(directory, experiment * ".dat"), ' ')
-
-    if size(Raw, 2) == 1
-        Raw = readdlm(joinpath(directory, experiment * ".dat"), ',')
+    if length(files) == 1
+        error("Please select both the .dat and 'acqu.par' files.")
+    elseif length(files) > 2
+        error("Please select only two files (data file and 'acqu.par'")
     end
 
-    Data = collect(transpose(complex.(Raw[:, 1:2:end], Raw[:, 2:2:end])))
 
-    ## Make time arrays
-    # Time array in direct dimension
-    t_direct = collect(1:n_echoes) * t_echo
+    acqufile = files[contains.(files, "acqu")][1]
+    datafile = files[.!contains.(files, "acqu")][1]
 
-    # Time array in direct dimension
-    if acqu[18, 3] == "yes" # if log spacing is selected, do log array
-        t_indirect = exp10.(range(log10(τ_min), log10(τ_max), τ_steps))
-    else                   # otherwise, do a linear array
-        t_indirect = collect(range(τ_min, τ_max, τ_steps))
-    end
+    exp = read_acqu(acqufile, "experiment")
 
-    if experiment == "T1IRT2"
+    if exp == "T1IRT2"
         seq = IRCPMG
+    elseif exp == "T1"
+        seq = IR
+    elseif exp == "T2"
+        seq = CPMG
+    elseif exp == "PGSTE"
+        seq = PFG
     end
 
-    return input2D(seq, t_direct, t_indirect, Data)
+    if seq in [IR, CPMG, PFG]
+
+        return import_csv(seq, datafile)
+
+    elseif seq in [IRCPMG]
+
+        # Read experiment parameters
+        acqu = readdlm(acqufile)
+        n_echoes = acqu[21, 3]
+        t_echo = acqu[12, 3] * 1e-6
+        τ_steps = acqu[36, 3]
+        τ_min = acqu[20, 3] * 1e-3
+        τ_max = acqu[19, 3] * 1e-3
+        experiment = acqu[13, 3]
+
+        Raw = readdlm(datafile, ' ')
+
+        if size(Raw, 2) == 1
+            Raw = readdlm(datafile, ',')
+        end
+
+        Data = collect(transpose(complex.(Raw[:, 1:2:end], Raw[:, 2:2:end])))
+
+        ## Make time arrays
+        # Time array in direct dimension
+        t_direct = collect(1:n_echoes) * t_echo
+
+        # Time array in direct dimension
+        if acqu[18, 3] == "yes" # if log spacing is selected, do log array
+            t_indirect = exp10.(range(log10(τ_min), log10(τ_max), τ_steps))
+        else                   # otherwise, do a linear array
+            t_indirect = collect(range(τ_min, τ_max, τ_steps))
+        end
+
+        return input2D(seq, t_direct, t_indirect, Data)
+
+    end
+
 
 end
 
 
-function writeresults(results::Union{invres1D,invres2D}, dir)
+
+function writeresults(results::Union{inv_out_1D,inv_out_2D}, dir)
 
     open(dir, "w") do io
         for field in fieldnames(typeof(results))
@@ -173,10 +212,10 @@ function readresults(dir::String)
 
         readuntil(io, "seq : ")
         seq = eval(Meta.parse(readline(io)))
-        supertype(seq) == pulse_sequence1D ? datatype = invres1D : datatype = invres2D
+        supertype(seq) == pulse_sequence1D ? datatype = inv_out_1D : datatype = inv_out_2D
 
         for field in fieldnames(datatype)
-           readuntil(io, field * " : ")
+            readuntil(io, field * " : ")
 
         end
 

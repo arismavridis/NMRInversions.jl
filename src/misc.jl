@@ -44,7 +44,7 @@ end
 """
 Return a vector of matrices, containing the F for each selection polygon.
 """
-function selections(res::invres2D)
+function selections(res::inv_out_2D)
 
     dir = res.X_dir
     indir = res.X_indir

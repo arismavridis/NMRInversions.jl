@@ -6,7 +6,7 @@ using NMRInversions, GLMakie, PolygonOps, LinearAlgebra, NativeFileDialog
 # res = invert(import_spinsolve(), alpha=0.7)
 # plot(res)
 
-function Makie.plot(results::NMRInversions.invres2D; kwargs...)
+function Makie.plot(results::NMRInversions.inv_out_2D; kwargs...)
 
     f = Figure(size=(500, 500))
     plot!(f, results; kwargs...)
@@ -15,7 +15,7 @@ function Makie.plot(results::NMRInversions.invres2D; kwargs...)
 
 end
 
-function Makie.plot!(fig::Union{GLMakie.Figure,GLMakie.GridPosition}, res::NMRInversions.invres2D;
+function Makie.plot!(fig::Union{Makie.Figure,Makie.GridPosition}, res::NMRInversions.inv_out_2D;
     title="", clmap=:tempo)
 
     x = res.X_indir
@@ -122,7 +122,7 @@ end
 
 function draw_3d(ax3d, res, sp)
 
-    surface!(ax3d, res.F' .* res.filter' , colormap=:tempo)
+    surface!(ax3d, res.F' .* res.filter', colormap=:tempo)
 
     surface!(ax3d, spo, colormap=:blues,
         colorrange=(minimum(filter(x -> x != 0, vec(z))), maximum(z)),
@@ -130,7 +130,7 @@ function draw_3d(ax3d, res, sp)
 
 end
 
-function NMRInversions.select_peaks(res::NMRInversions.invres2D)
+function NMRInversions.select_peaks(res::NMRInversions.inv_out_2D)
     # begin
     gui = Figure(size=(900, 500))
     Makie.plot!(gui[2:10, 1:9], res)
@@ -271,3 +271,40 @@ end
 
 end
 
+
+function Makie.plot(res::NMRInversions.inv_out_1D; kwargs...)
+
+    f = Figure(size=(500, 500))
+    plot!(f, res; kwargs...)
+
+    return f
+
+end
+
+function Makie.plot!(fig::Union{Makie.Figure,Makie.GridPosition}, res::NMRInversions.inv_out_1D;
+    title="")
+
+    # Make axes
+    if res.seq in [NMRInversions.IR, NMRInversions.CPMG]
+        ax1 = Axis(fig[:, 1], xlabel="time", ylabel="Signal")
+        ax2 = Axis(fig[:, 2], xlabel="T", xscale=log10)
+
+    elseif res.seq in [NMRInversions.PFG]
+        ax1 = Axis(fig[:, 1], xlabel="b factor", ylabel="Signal")
+        ax2 = Axis(fig[:, 2], xlabel="D (m²/s)", xscale=log10)
+    end
+
+    ax1 = Axis(fig[:, 1], xlabel="time", ylabel="Signal")
+    ax2 = Axis(fig[:, 2], xscale=log10)
+
+    draw_on_axes(ax1, ax2, res)
+
+end
+
+function draw_on_axes(ax1, ax2, res::NMRInversions.inv_out_1D)
+
+    scatter!(ax1, res.x, res.y)
+    lines!(ax1, res.xfit, res.yfit)
+    lines!(ax2, res.X, res.f)
+
+end

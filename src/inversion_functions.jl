@@ -3,7 +3,7 @@
     invert(seq, x, y [, lims, alpha, order, solver])
 
 This function will build a kernel and use it to perform an inversion using the algorithm of your choice.
-The output is an [invres1D](@docs) structure.
+The output is an [inv_out_1D](@docs) structure.
 
  Necessary (positional) arguments:
 - `seq` is the 1D pulse sequence (e.g. IR, CPMG, PGSE)
@@ -56,7 +56,7 @@ function invert(seq::Type{<:pulse_sequence1D}, x::AbstractArray, y::Vector;
 
     weighted_average =  f'X / sum(f)
 
-    return invres1D(seq, x, y, x_fit, y_fit, X, f, r, SNR, α, weighted_average)
+    return inv_out_1D(seq, x, y, x_fit, y_fit, X, f, r, SNR, α, weighted_average)
 
 end
 
@@ -74,7 +74,7 @@ end
     invert(seq, x_direct, x_indirect, X_direct, X_indirect, Data)
 
 This function will build a kernel and use it to perform an inversion using the algorithm of your choice.
-The output is an [invres2D](@docs) structure.
+The output is an [inv_out_2D](@docs) structure.
 
  Necessary (positional) arguments:
 - `seq` is the 2D pulse sequence (e.g. IRCPMG)
@@ -134,7 +134,7 @@ function invert(
 
     F = reshape(f, length(X_direct), length(X_indirect))
 
-    results = invres2D(seq, X_direct, X_indirect, F, r, calc_snr(Data), α, ones(size(F)), [])
+    results = inv_out_2D(seq, X_direct, X_indirect, F, r, calc_snr(Data), α, ones(size(F)), [])
 
     return results
 

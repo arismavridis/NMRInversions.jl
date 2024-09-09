@@ -54,7 +54,7 @@ include("misc.jl")
 # Export useful functions
 export invert
 export create_kernel
-export import_1D
+export import_csv
 export import_spinsolve, import_geospec
 
 # The following functions are modified from extension files
