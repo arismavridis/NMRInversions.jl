@@ -13,7 +13,6 @@ to do list:
 - fix L curve method 
 - add gcv for reci method
 - fix readresults and writeresults
-- add 1D gui
 """
 
 ## The following are custom types for multiple dispatch purposes
