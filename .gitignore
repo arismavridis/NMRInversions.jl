@@ -1,17 +1,5 @@
 /Manifest.toml
 test.jl
 
-docs/build/.documenter-siteinfo.json
-docs/build/index.html
-docs/build/objects.inv
-docs/build/search_index.js
-docs/build/assets/documenter.js
-docs/build/assets/themeswap.js
-docs/build/assets/warner.js
-docs/build/assets/themes/catppuccin-frappe.css
-docs/build/assets/themes/catppuccin-latte.css
-docs/build/assets/themes/catppuccin-macchiato.css
-docs/build/assets/themes/catppuccin-mocha.css
-docs/build/assets/themes/documenter-dark.css
-docs/build/assets/themes/documenter-light.css
 docs/Manifest.toml
+docs/build

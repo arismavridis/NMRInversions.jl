@@ -1,3 +1,4 @@
+export input1D
 """
     input1D(seq, x, y)
 A structure containing the following elements:
@@ -13,6 +14,7 @@ struct input1D
 end
 
 
+export input2D
 """
     input2D(seq, x, y)
 A structure containing the following elements:
@@ -28,6 +30,8 @@ struct input2D
     data::AbstractMatrix
 end
 
+
+export inv_out_1D
 """
     inv_out_1D(seq, x, y, xfit, yfit, X, f, r, SNR, α, wa)
 A structure containing the following elements:
@@ -59,6 +63,8 @@ struct inv_out_1D
 end
 
 
+
+export inv_out_2D
 """
     inv_out_2D(seq, X_dir, X_indir, F, r, SNR, α, del_pol, sel_pol)
 A structure containing the following elements:
@@ -85,6 +91,8 @@ struct inv_out_2D
     selections::Vector{Vector{Vector}}
 end
 
+
+export import_csv
 """
     import_csv(seq, file)
 Import data from a CSV file.
@@ -92,7 +100,8 @@ The function reads the file and returns an `input1D` structure.
 - `seq` is the 1D pulse sequence (e.g. IR, CPMG, PGSE)
 - `file` is the path to the CSV file which contains the data (x, y) in two respective columns.
 \
-The function can also be called with only the seq argument, in which case a file dialog will open to select the file.
+The function can be called without the seq argument, and the output will be the x and y vectors( `x,y =import_csv()`).
+Alternatively, the function can also be called with only the seq argument, in which case a file dialog will open to select the file.
 """
 function import_csv(seq::Type{<:pulse_sequence1D}, file=pick_file(pwd()))
     x, y = import_csv(file)
@@ -106,6 +115,7 @@ function import_csv(file=pick_file(pwd()))
     return x, y
 end
 
+
 function read_acqu(filename, parameter)
 
     p = ""
@@ -117,6 +127,7 @@ function read_acqu(filename, parameter)
 end
 
 
+export import_spinsolve
 """
     import_spinsolve(files)
 Import data from a Spinsolve experiment. 
@@ -224,6 +235,15 @@ function readresults(dir::String)
 end
 
 
+
+export import_geospec
+"""
+    import_geospec(dir)
+Import data from a .txt format, as exported by Geospec instruments.
+
+The function reads the relevant information, performs a phase correction on the data,
+and returns an `input1D` or `input2D` structure.
+"""
 function import_geospec(filedir::String=pick_file(pwd()))
 
     # cd(dirname(filedir))
