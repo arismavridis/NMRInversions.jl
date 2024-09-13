@@ -27,11 +27,13 @@ y = g + 0.005 * maximum(g) .* randn(length(x))
 ```
 
 Now we have the data, the inversion can be performed using a single line of code!
+
 ```julia
 results = invert(CPMG, x, y, alpha=gcv)
 ```
 
-And the results can easily be visualised using the GLMakie extension of the package.
+And the results can easily be visualised through the GLMakie extension of the package.
+
 ```julia
 using GLMakie
 plot(results)
@@ -56,3 +58,12 @@ invert(import_spinsolve())
 # 2D inversion
 Let's try with a T1-T2 experiment, using the IR-CPMG sequence.
 Again, we start by creating some data.
+
+
+# Importing data
+
+This package offfers functions to easily import data from various instruments into input1D / input2D structures to be used by the inversion functions.
+
+## Spinsolve format
+## Geospec format
+## Stelar format
