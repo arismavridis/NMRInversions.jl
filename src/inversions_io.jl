@@ -1,43 +1,114 @@
+export input1D
+"""
+    input1D(seq, x, y)
+A structure containing the following elements:
+- `seq` is the 1D pulse sequence (e.g. IR, CPMG, PGSE)
+- `x`, the x values of the measurement (e.g time for relaxation or b-factor for diffusion).
+- `y`, the y values of the measurement. 
+
+"""
 struct input1D
-    exptype::Type{<:inversion1D}
+    seq::Type{<:pulse_sequence1D}
     x::AbstractVector{<:Real}
     y::AbstractVector
 end
 
+
+export input2D
+"""
+    input2D(seq, x, y)
+A structure containing the following elements:
+- `seq` is the 2D pulse sequence (e.g. IRCPMG)
+- `x_direct` is the direct dimension acquisition parameter (e.g. the times when you aquire CPMG echoes).
+- `x_indirect` is the indirect dimension acquisition parameter (e.g. all the delay times τ in your IR sequence).
+
+"""
 struct input2D
-    exptype::Type{<:inversion2D}
+    seq::Type{<:pulse_sequence2D}
     x_direct::AbstractVector{<:Real}
     x_indirect::AbstractVector{<:Real}
     data::AbstractMatrix
 end
 
-struct invres1D
-    exptype::Type{<:inversion1D}
+
+export inv_out_1D
+"""
+    inv_out_1D(seq, x, y, xfit, yfit, X, f, r, SNR, α, wa)
+A structure containing the following elements:
+- `seq` is the 1D pulse sequence (e.g. IR, CPMG, PGSE)
+- `x`, the x values of the measurement (e.g time for relaxation or b-factor for diffusion).
+- `y`, the y values of the measurement.
+- `xfit`, the x values of the fitted data.
+- `yfit`, the y values of the fitted data.
+- `X`, the x values of the inversion results.
+- `f`, the inversion results.
+- `r`, the residuals.
+- `SNR`, the signal-to-noise ratio.
+- `α`, the regularization parameter.
+- `wa`, the weighted average of the inversion results (e.g. the mean relaxation time or diffusion coefficient).
+
+"""
+struct inv_out_1D
+    seq::Type{<:pulse_sequence1D}
+    x::Vector
+    y::Vector
+    xfit::Vector
+    yfit::Vector
     X::Vector
     f::Vector
     r::Vector
     SNR::Real
     alpha::Real
-    xfit::Vector
-    yfit::Vector
+    wa::Real
 end
 
-struct invres2D
-    exptype::Type{<:inversion2D}
+
+
+export inv_out_2D
+"""
+    inv_out_2D(seq, X_dir, X_indir, F, r, SNR, α, del_pol, sel_pol)
+A structure containing the following elements:
+- `seq` is the 2D pulse sequence (e.g. IRCPMG)
+- `X_dir`, the x values of the direct dimension.
+- `X_indir`, the x values of the indirect dimension.
+- `F`, the inversion results as a matrix.
+- `r`, the residuals.
+- `SNR`, the signal-to-noise ratio.
+- `alpha`, the regularization parameter.
+- `filter`, apply a mask to filter out artefacts when plotting.
+- `selections`, the selection masks (e.g. when you want to highlight some peaks in a T₁-T₂ map).
+
+"""
+struct inv_out_2D
+    seq::Type{<:pulse_sequence2D}
     X_dir::Vector
     X_indir::Vector
-    f::Vector
+    F::Matrix
     r::Vector
     SNR::Real
     alpha::Real
+    filter::Matrix
+    selections::Vector{Vector{Vector}}
 end
 
-function import_1D(exptype::Type{<:inversion1D}, file=pick_file(pwd()))
-    x, y = import_1D(file)
-    return input1D(exptype, x, y)
+
+export import_csv
+"""
+    import_csv(seq, file)
+Import data from a CSV file.
+The function reads the file and returns an `input1D` structure.
+- `seq` is the 1D pulse sequence (e.g. IR, CPMG, PGSE)
+- `file` is the path to the CSV file which contains the data (x, y) in two respective columns.
+\
+The function can be called without the seq argument, and the output will be the x and y vectors( `x,y =import_csv()`).
+Alternatively, the function can also be called with only the seq argument, in which case a file dialog will open to select the file.
+"""
+function import_csv(seq::Type{<:pulse_sequence1D}, file=pick_file(pwd()))
+    x, y = import_csv(file)
+    return input1D(seq, x, y)
 end
 
-function import_1D(file=pick_file(pwd()))
+function import_csv(file=pick_file(pwd()))
     data = readdlm(file, ',')
     x = vec(data[:, 1])
     y = vec(data[:, 2])
@@ -49,186 +120,133 @@ function read_acqu(filename, parameter)
 
     p = ""
     open(filename) do io
-        readuntil(io, parameter*" = ")
+        readuntil(io, parameter * " = ")
         p = readline(io)
     end
     return replace(p, "\"" => "")
 end
 
 
-function import_spinsolve(directory::String=pick_folder(pwd()))
+export import_spinsolve
+"""
+    import_spinsolve(files)
+Import data from a Spinsolve experiment. 
+Two paths must be provided as follows (order is not important):
+- `files` = [.../datafile.csv , .../acqu.par.bak] 
+\
+Calling this function without an argument by typing `import_spinsolve()` will open a file dialog to select the files.
+The function reads the acqu.par.bak file to get the acquisition parameters, and the .dat file to get the data. 
+The function returns an `input2D` structure.
+"""
+function import_spinsolve(files=pick_multi_file(pwd()))
 
-    directory = abspath(directory)
-    cd(directory)
-
-    # Read experiment parameters
-    acqu = readdlm(joinpath(directory, "acqu.par.bak"))
-    n_echoes = acqu[21, 3]
-    t_echo = acqu[12, 3] * 1e-6
-    τ_steps = acqu[36, 3]
-    τ_min = acqu[20, 3] * 1e-3
-    τ_max = acqu[19, 3] * 1e-3
-    experiment = acqu[13, 3]
-
-    Raw = readdlm(joinpath(directory, experiment * ".dat"), ' ')
-
-    if size(Raw, 2) == 1
-        Raw = readdlm(joinpath(directory, experiment * ".dat"), ',')
+    if length(files) == 1
+        error("Please select both the .dat and 'acqu.par' files.")
+    elseif length(files) > 2
+        error("Please select only two files (data file and 'acqu.par'")
     end
 
-    Data = collect(transpose(complex.(Raw[:, 1:2:end], Raw[:, 2:2:end])))
 
-    ## Make time arrays
-    # Time array in direct dimension
-    t_direct = collect(1:n_echoes) * t_echo
+    acqufile = files[contains.(files, "acqu")][1]
+    datafile = files[.!contains.(files, "acqu")][1]
 
-    # Time array in direct dimension
-    if acqu[18, 3] == "yes" # if log spacing is selected, do log array
-        t_indirect = exp10.(range(log10(τ_min), log10(τ_max), τ_steps))
-    else                   # otherwise, do a linear array
-        t_indirect = collect(range(τ_min, τ_max, τ_steps))
+    exp = read_acqu(acqufile, "experiment")
+
+    if exp == "T1IRT2"
+        seq = IRCPMG
+    elseif exp == "T1"
+        seq = IR
+    elseif exp == "T2"
+        seq = CPMG
+    elseif exp == "PGSTE"
+        seq = PFG
     end
 
-    if experiment == "T1IRT2"
-        exptype = IRCPMG
+    if seq in [IR, CPMG, PFG]
+
+        return import_csv(seq, datafile)
+
+    elseif seq in [IRCPMG]
+
+        # Read experiment parameters
+        acqu = readdlm(acqufile)
+        n_echoes = acqu[21, 3]
+        t_echo = acqu[12, 3] * 1e-6
+        τ_steps = acqu[36, 3]
+        τ_min = acqu[20, 3] * 1e-3
+        τ_max = acqu[19, 3] * 1e-3
+        experiment = acqu[13, 3]
+
+        Raw = readdlm(datafile, ' ')
+
+        if size(Raw, 2) == 1
+            Raw = readdlm(datafile, ',')
+        end
+
+        Data = collect(transpose(complex.(Raw[:, 1:2:end], Raw[:, 2:2:end])))
+
+        ## Make time arrays
+        # Time array in direct dimension
+        t_direct = collect(1:n_echoes) * t_echo
+
+        # Time array in direct dimension
+        if acqu[18, 3] == "yes" # if log spacing is selected, do log array
+            t_indirect = exp10.(range(log10(τ_min), log10(τ_max), τ_steps))
+        else                   # otherwise, do a linear array
+            t_indirect = collect(range(τ_min, τ_max, τ_steps))
+        end
+
+        return input2D(seq, t_direct, t_indirect, Data)
+
     end
 
-    return input2D(exptype, t_direct, t_indirect, Data)
 
 end
 
-function writeresults(filedir::String, res::invres1D)
 
-    open(filedir, "w") do io
-        write(io, "Pulse Sequence : " * string(res.exptype) * "\n")
-        write(io, "SNR : " * string(res.SNR) * "\n")
-        write(io, "alpha : " * string(res.alpha) * "\n")
-        write(io, "X : " * join(res.X, ", ") * "\n")
-        write(io, "Inversion Results : " * join(res.f, ", ") * "\n")
-        write(io, "Residuals : " * join(res.r, ", ") * "\n")
+
+function writeresults(results::Union{inv_out_1D,inv_out_2D}, dir)
+
+    open(dir, "w") do io
+        for field in fieldnames(typeof(results))
+            data = getfield(results, field)
+            datastring = isa(data, Array) ? join(data, ", ") : string(getfield(results, field))
+            write(io, String(field) * " : " * datastring * "\n")
+        end
     end
 
 end
 
-function writeresults(filedir::String, res::invres2D)
+function readresults(dir::String)
 
-    open(filedir, "w") do io
-        write(io, "Pulse Sequence : " * string(res.exptype) * "\n")
-        write(io, "SNR : " * string(res.SNR) * "\n")
-        write(io, "alpha : " * string(res.alpha) * "\n")
-        write(io, "Direct Dimension : " * join(res.X_dir, ", ") * "\n")
-        write(io, "Indirect Dimension : " * join(res.X_indir, ", ") * "\n")
-        write(io, "Inversion Results : " * join(res.f, ", ") * "\n")
-        write(io, "Residuals : " * join(res.r, ", ") * "\n")
+    open(dir) do io
+
+        readuntil(io, "seq : ")
+        seq = eval(Meta.parse(readline(io)))
+        supertype(seq) == pulse_sequence1D ? datatype = inv_out_1D : datatype = inv_out_2D
+
+        for field in fieldnames(datatype)
+            readuntil(io, field * " : ")
+
+        end
+
     end
 
 end
 
-function readresults(file::String=pick_file(pwd()))
-
-    open(file) do io
-
-        readuntil(io, "Pulse Sequence : ")
-        PulseSequence = eval(Meta.parse(readline(io)))
-        readuntil(io, "SNR : ")
-        SNR = parse.(Float64, readline(io))
-        readuntil(io, "alpha : ")
-        α = parse.(Float64, readline(io))
-        readuntil(io, "Direct Dimension : ")
-        dir = parse.(Float64, split(readline(io), ','))
-        readuntil(io, "Indirect Dimension : ")
-        indir = parse.(Float64, split(readline(io), ','))
-        readuntil(io, "Inversion Results : ")
-        f = parse.(Float64, split(readline(io), ','))
-        readuntil(io, "Residuals : ")
-        r = parse.(Float64, split(readline(io), ','))
-
-        return invres2D(PulseSequence, dir, indir, f, r, SNR, α)
-    end
-end
 
 
-function entropy(u::AbstractArray, p::Tuple)
+export import_geospec
+"""
+    import_geospec(dir)
+Import data from a .txt format, as exported by Geospec instruments.
 
-    phc0 = u[1]
-    phc1 = u[2]
-    R⁰ = p[1]
-    I⁰ = p[2]
-    γ = p[3]
-
-    n = length(R⁰)
-    ϕ = phc0 .+ phc1 .* collect(range(1, n) ./ n)
-
-    R, _ = phase_shift(R⁰, I⁰, ϕ)
-
-    h = abs.(diff(R)) ./ sum(abs.(diff(R)))
-
-    return -sum(h .* log.(h)) + γ * sum((R .^ 2)[findall(x -> x < 0, R)])
-
-end
-
-
-function minimize_entropy(Re, Im, γ)
-
-    optf = Optimization.OptimizationFunction(entropy)
-    prob = Optimization.OptimizationProblem(optf, [0.1, 0.1], (Re, Im, γ))# lb=[0.0001, 0.0001], ub=[2π, 2π])
-
-    uopt = OptimizationOptimJL.solve(prob, OptimizationOptimJL.SimulatedAnnealing())
-
-    n = length(Re)
-    ϕ = uopt[1] .+ uopt[2] .* collect(range(1, n) ./ n)
-
-    Rₙ, Iₙ = phase_shift(Re, Im, ϕ)
-
-    p = plot(a[:, 1], Rₙ, label="Real")
-    p = plot!(a[:, 1], Iₙ, label="Imaginary")
-    display(p)
-
-    return Rₙ, Iₙ
-
-end
-
-
-function im_cost(u, p)  # sum of squares of the imaginary Part
-
-    Re = p[1]
-    Im = p[2]
-    ϕ = u[1]
-
-    _, Iₙ = phase_shift(Re, Im, ϕ)
-    return sum(Iₙ .^ 2)
-
-end
-
-
-function phase_shift(Re, Im, ϕ)
-
-    Re_new = Re .* cos(ϕ) - Im .* sin(ϕ)
-    Im_new = Im .* cos(ϕ) + Re .* sin(ϕ)
-
-    return Re_new, Im_new
-end
-
-
-function autophase(re, im, startingpoint::Real) # startingpoint is a value between -1 and 1
-
-    ϕ_range = range(0, 2π, 500)
-    Re1_vs_φ = re[1] .* cos.(ϕ_range) - im[1] .* sin.(ϕ_range)
-
-    ϕ₀ = ϕ_range[argmin(abs.(Re1_vs_φ .- startingpoint * maximum(Re1_vs_φ)))]
-
-    optf = Optimization.OptimizationFunction(im_cost, Optimization.AutoForwardDiff())
-    prob = Optimization.OptimizationProblem(optf, [ϕ₀], (re, im), lb=[ϕ₀ - 1], ub=[ϕ₀ + 1], x_tol=1e-5)
-    ϕ = OptimizationOptimJL.solve(prob, OptimizationOptimJL.BFGS())[1]
-
-    Rₙ, Iₙ = phase_shift(re, im, ϕ)
-
-    return Rₙ, Iₙ, ϕ
-end
-
+The function reads the relevant information, performs a phase correction on the data,
+and returns an `input1D` or `input2D` structure.
+"""
 function import_geospec(filedir::String=pick_file(pwd()))
 
-    cd(dirname(filedir))
+    # cd(dirname(filedir))
 
     data = []
     pulse_sequence_number::Int16 = 0
@@ -254,12 +272,11 @@ function import_geospec(filedir::String=pick_file(pwd()))
         105 => PFG,
         106 => IRCPMG,
         108 => PFGCPMG
-        # ,110 => CPMGCPMG
     )
 
-    exptype = typedict[pulse_sequence_number]
+    seq = typedict[pulse_sequence_number]
 
-    if exptype in [IR, IRCPMG]
+    if seq in [IR, IRCPMG]
         y_re, y_im, ϕ = autophase(y_re, y_im, -1)
     else
         y_re, y_im, ϕ = autophase(y_re, y_im, 1)
@@ -267,20 +284,20 @@ function import_geospec(filedir::String=pick_file(pwd()))
 
     display("Data phase corrected by $(round(ϕ,digits=3)) radians.")
 
-    if exptype == IRCPMG
+    if seq == IRCPMG
 
         return input2D(IRCPMG, data[1:dimensions[1], 1] .* (1 / 1000), data[1:dimensions[1]:end, 2] .* (1 / 1000), reshape(complex.(y_re, y_im), dimensions[1], dimensions[2]))
 
-    elseif exptype == PFGCPMG
+    elseif seq == PFGCPMG
 
         return input2D(PFGCPMG, data[1:dimensions[1], 1], data[1:dimensions[1]:end, 2] .* (1 / 1000), reshape(complex.(y_re, y_im), dimensions[1], dimensions[2]))
 
-    elseif exptype == PFG
+    elseif seq == PFG
 
-        return input1D(exptype, data[:, 1], complex.(y_re, y_im))
+        return input1D(seq, data[:, 1], complex.(y_re, y_im))
 
-    elseif exptype in [IR, CPMG]
+    elseif seq in [IR, CPMG]
 
-        return input1D(exptype, data[:, 1] .* (1 / 1000), complex.(y_re, y_im)) # Converts time to seconds
+        return input1D(seq, data[:, 1] .* (1 / 1000), complex.(y_re, y_im)) # Converts time to seconds
     end
 end
