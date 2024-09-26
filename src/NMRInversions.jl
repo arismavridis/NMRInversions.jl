@@ -15,6 +15,7 @@ to do list:
 - differentiate between Mitchell GCV and optimization GCV
 - fix readresults and writeresults
 - introduce faf, flip angle fraction, to the kernel. 1 would be a perfect pulse, 0 would be no pulse.
+- add precompilation
 """
 
 ## The following are custom types for multiple dispatch purposes
@@ -23,11 +24,12 @@ to do list:
 abstract type pulse_sequence1D end
 abstract type pulse_sequence2D end
 struct IR <: pulse_sequence1D end
+struct SR <: pulse_sequence1D end
 struct CPMG <: pulse_sequence1D end
 struct PFG <: pulse_sequence1D end
 struct IRCPMG <: pulse_sequence2D end
 struct PFGCPMG <: pulse_sequence2D end
-export pulse_sequence1D, pulse_sequence2D, IR, CPMG, PFG, IRCPMG, PFGCPMG
+export pulse_sequence1D, pulse_sequence2D, IR, SR, CPMG, PFG, IRCPMG, PFGCPMG
 
 # Supported solvers 
 abstract type regularization_solver end 
@@ -50,6 +52,7 @@ include("finding_alpha.jl")
 include("optim_regularizations.jl")
 include("L1_regularization.jl")
 include("inversion_functions.jl")
+include("exp_fits.jl")
 include("misc.jl")
 
 # Export useful functions

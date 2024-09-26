@@ -6,32 +6,72 @@ using NMRInversions, GLMakie, PolygonOps, LinearAlgebra, NativeFileDialog
 # res = invert(import_spinsolve(), alpha=0.7)
 # plot(res)
 
-function Makie.plot(res::NMRInversions.inv_out_1D; kwargs...)
+## Plots for expfits
+function Makie.plot(res::expfit_struct...; kwargs...)
 
     f = Figure(size=(500, 500))
-    plot!(f, res; kwargs...)
+    plot!(f, res...; kwargs...)
 
     return f
 
 end
 
-function Makie.plot!(fig::Union{Makie.Figure,Makie.GridPosition}, res::NMRInversions.inv_out_1D;
+
+function Makie.plot!(fig::Union{Makie.Figure,Makie.GridPosition}, res::expfit_struct...;
+    names=["Data" for _ in res], markersize=7, eqn=true)
+
+    # Make axes
+    if res[1].seq in [NMRInversions.IR]
+        ax = Axis(fig[1, 1], xlabel="time (s)", ylabel="Signal (a.u.)")
+
+    elseif res[1].seq in [NMRInversions.CPMG]
+        ax = Axis(fig[1, 1], xlabel="time (s)", ylabel="Signal (a.u.)")
+
+    elseif res[1].seq in [NMRInversions.PFG]
+        ax = Axis(fig[1, 1], xlabel="b factor", ylabel="Signal (a.u.)")
+    end
+
+    for (i, r) in enumerate(res)
+        xfit = collect(range(0, 1.1 * maximum(r.x), 500))
+        scatter!(ax, r.x, r.y, markersize=markersize, label=names[i])
+        lines!(ax, xfit, mexp(r.u, xfit), label=getfield(r, eqn == true ? :eqn : :eq))
+    end
+
+    axislegend(ax, position=(res[1].seq == IR ? :rb : :rt), nbanks=2)
+
+end
+
+
+## Plots for 1D inversions
+function Makie.plot(res::NMRInversions.inv_out_1D...; kwargs...)
+
+    f = Figure(size=(500, 500))
+    plot!(f, res...; kwargs...)
+
+    return f
+
+end
+
+function Makie.plot!(fig::Union{Makie.Figure,Makie.GridPosition}, res::NMRInversions.inv_out_1D...;
     title="")
 
     # Make axes
-    if res.seq in [NMRInversions.IR, NMRInversions.CPMG]
+    if res[1].seq in [NMRInversions.IR]
         ax1 = Axis(fig[:, 1], xlabel="time", ylabel="Signal")
-        ax2 = Axis(fig[:, 2], xlabel="T", xscale=log10)
+        ax2 = Axis(fig[:, 2], xlabel="T₁", xscale=log10)
 
-    elseif res.seq in [NMRInversions.PFG]
+    elseif res[1].seq in [NMRInversions.CPMG]
+        ax1 = Axis(fig[:, 1], xlabel="time", ylabel="Signal")
+        ax2 = Axis(fig[:, 2], xlabel="T₂", xscale=log10)
+
+    elseif res[1].seq in [NMRInversions.PFG]
         ax1 = Axis(fig[:, 1], xlabel="b factor", ylabel="Signal")
         ax2 = Axis(fig[:, 2], xlabel="D (m²/s)", xscale=log10)
     end
 
-    ax1 = Axis(fig[:, 1], xlabel="time", ylabel="Signal")
-    ax2 = Axis(fig[:, 2], xscale=log10)
-
-    draw_on_axes(ax1, ax2, res)
+    for r in res
+        draw_on_axes(ax1, ax2, r)
+    end
 
 end
 
@@ -44,6 +84,7 @@ function draw_on_axes(ax1, ax2, res::NMRInversions.inv_out_1D)
 end
 
 
+## Plots for 2D inversions
 function Makie.plot(results::NMRInversions.inv_out_2D; kwargs...)
 
     f = Figure(size=(500, 500))
