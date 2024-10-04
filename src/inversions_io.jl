@@ -21,6 +21,7 @@ A structure containing the following elements:
 - `seq` is the 2D pulse sequence (e.g. IRCPMG)
 - `x_direct` is the direct dimension acquisition parameter (e.g. the times when you aquire CPMG echoes).
 - `x_indirect` is the indirect dimension acquisition parameter (e.g. all the delay times τ in your IR sequence).
+- `data` is the 2D data matrix.
 
 """
 struct input2D

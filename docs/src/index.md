@@ -14,3 +14,7 @@ using Pkg ; Pkg.add("NMRInversions")
 ```
 This needs to be done only once (unless you swap environment, more on that [here](https://pkgdocs.julialang.org/v1/environments/)).
 
+Afterwards, you can use the package by running `using NMRInversions` in your julia console.
+
+For more details on how to use the package, please refer to the [tutorial](tutorial.md) section.
+

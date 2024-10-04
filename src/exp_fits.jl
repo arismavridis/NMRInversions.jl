@@ -4,7 +4,13 @@ Structure containing information about multiexponential fits.
 
 The fields are as follows:
 - `seq`: The pulse sequence
-- `x` : The  
+- `x` : The x acquisition values (e.g. time for relaxation or b-factor for diffusion).
+- `y` : The y acquisition values.
+- `u` : The fitted parameters for the `mexp` function.
+- `u0` : The initial parameters for the `mexp` function.
+- `r` : The residuals.
+- `eq` : The equation of the fitted function.
+- `eqn` : The equation of the initial function.
 
 """
 struct expfit_struct
@@ -35,6 +41,16 @@ mexp([a,b,c,d,e,f] , x) = a * exp.( (1/b) * x) + c * exp.((1/d) * x) + e * exp.(
 """
 mexp(u, x) = sum([u[i] * exp.(-(1 / u[i+1]) * x) for i in 1:2:length(u)])
 
+function mexp(seq, u, x)
+
+    if seq == IR
+    elseif seq == SR
+    elseif seq in [CPMG, PGSE]
+        return mexp(u, x)
+    end
+
+end
+
 "Loss function for multi-exponential fit, returns the sum of squared differences between the data and the model."
 function mexp_loss(u, p)
     x = p[1]
@@ -49,8 +65,8 @@ export expfit
 Fit an exponential function to the data x, y using n exponential terms. \n
 
 """
-function expfit(n::Int, seq, x::Vector, y::Vector;
-    u0=rand(2n), solver=OptimizationOptimJL.BFGS())
+function expfit(n::Int, seq::Type{<:NMRInversions.pulse_sequence1D}, x::Vector, y::Vector;
+    u0::Vector=rand(2n), solver=OptimizationOptimJL.BFGS())
 
     yfit = copy(y)
     # Transform recovery to decay if needed
@@ -62,7 +78,7 @@ function expfit(n::Int, seq, x::Vector, y::Vector;
 
     # Solve the optimization
     optf = Optimization.OptimizationFunction(mexp_loss, Optimization.AutoForwardDiff())
-    prob = Optimization.OptimizationProblem(optf, u0, [x, y], lb=zeros(length(u0)), ub=Inf .* ones(length(u0)))
+    prob = Optimization.OptimizationProblem(optf, u0, [x, yfit], lb=zeros(length(u0)), ub=Inf .* ones(length(u0)))
     u = OptimizationOptimJL.solve(prob, solver, maxiters=5000, maxtime=100)
 
     # Determine what's the x-axis of the seq (time or bfactor)
@@ -92,3 +108,8 @@ function expfit(n::Int, res::NMRInversions.input1D; kwargs...)
     expfit(n, res.seq, res.x, res.y, kwargs...)
 end
 
+function foo(x)
+
+    println("$x has been foo'd")
+
+end
