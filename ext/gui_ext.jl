@@ -34,7 +34,7 @@ function Makie.plot!(fig::Union{Makie.Figure,Makie.GridPosition}, res::expfit_st
     for (i, r) in enumerate(res)
         xfit = collect(range(0, 1.1 * maximum(r.x), 500))
         scatter!(ax, r.x, r.y, markersize=markersize, label=names[i])
-        lines!(ax, xfit, mexp(r.u, xfit), label=getfield(r, eqn == true ? :eqn : :eq))
+        lines!(ax, xfit, mexp(r.seq, r.u, xfit), label=getfield(r, eqn == true ? :eqn : :eq))
     end
 
     axislegend(ax, position=(res[1].seq == IR ? :rb : :rt), nbanks=2)
