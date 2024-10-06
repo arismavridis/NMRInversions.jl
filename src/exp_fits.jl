@@ -97,8 +97,8 @@ function expfit(n::Int, seq::Type{<:NMRInversions.pulse_sequence1D}, x::Vector, 
 
     if seq == IR
         unstr = string(round(un,sigdigits = 2))
-        eq = unstr * " - 2 * (" * eq * ")" 
-        eqn = unstr * " - 2 * " *  eqn   
+        eq = unstr * " -2* (" * eq * ")" 
+        eqn = unstr * " -2* " *  eqn   
 
     elseif seq == SR
         unstr = string(round(un,sigdigits = 2))
