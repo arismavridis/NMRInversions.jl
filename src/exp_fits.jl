@@ -70,12 +70,61 @@ end
 
 export expfit
 """
-    expfit(n, seq, x, y; u0, solver=BFGS())
-Fit an exponential function to the data x, y using n exponential terms. \n
+    expfit(n, seq, x, y; kwargs...)
+
+Fit an exponential function to the data `x`, `y` using `n` exponential terms. \n
+Starting points for the nonlinear regression are automatically chosen.
+
+Arguments:
+
+- `n` : number of exponential terms.
+- `seq` : pulse sequence.
+- `x` : acquisition x parameter (time for relaxation or b-factor for diffusion).
+- `y` : acquisition y parameter (magnetization).
+
+Alternatively, you can also use `expfit(n, data)`, where data is an `input1D` structure.
+"""
+function expfit(n::Int, seq::Type{<:NMRInversions.pulse_sequence1D}, x::Vector, y::Vector; kwargs...)
+    u0 = (ones(2 * n))
+    u0[2:2:end] .= [10.0^(1-x)  for x in 1:n]
+    return expfit(u0, seq, x, y; kwargs...)
+end
+
 
 """
-function expfit(n::Int, seq::Type{<:NMRInversions.pulse_sequence1D}, x::Vector, y::Vector;
-    u0::Vector=rand(2n), solver=OptimizationOptimJL.BFGS())
+    expfit(u0, seq, x, y; solver=BFGS())
+
+Fit an exponential function to the data `x`, `y`. \n
+
+The u0 argument is a vector of initial parameter guesses, 
+and it also determines the number of exponential terms used.
+It should be of the form [a1, b1, a2, b2, ...], 
+where a's are the amplitudes and b's are the reciprocals of the decay constants.
+The length of `u0` must be an even number.
+
+The following examples might help to clarify: \n
+`expfit([a,b] , CPMG, x, y)` -> mono-exponential fit with initial guess: a * exp.( (1/b) * x) \n
+
+`expfit([a,b,c,d] , CPMG, x, y)` -> double-exponential fit with initial guess: a * exp.( (1/b) * x) + c * exp.((1/d) * x) \n
+
+`expfit([a,b,c,d,e,f] , CPMG, x, y)` -> triple-exponential fit with initial guess: a * exp.( (1/b) * x) + c * exp.((1/d) * x) + e * exp.((1/f) * x) \n
+
+(where a,b,c,d,e,f are numbers of your choice)
+Numbers of parameters beyond tri-exponential can also be used, but it is not recommended.
+
+Arguments:
+
+- `u0` : initial parameter guesses.
+- `seq` : pulse sequence.
+- `x` : acquisition x parameter (time for relaxation or b-factor for diffusion).
+- `y` : acquisition y parameter (magnetization).
+- `solver` : OptimizationOptimJL solver, defeault choice is BFGS().
+
+Alternatively, you can also use `expfit(u0, data)`, where data is an `input1D` structure.
+
+"""
+function expfit(u0::Vector, seq::Type{<:NMRInversions.pulse_sequence1D}, x::Vector, y::Vector;
+     solver=OptimizationOptimJL.BFGS())
 
     u0 = Float64.(u0)
 
@@ -109,7 +158,7 @@ function expfit(n::Int, seq::Type{<:NMRInversions.pulse_sequence1D}, x::Vector, 
     # Calculate the residuals
     r = mexp(seq, u, x) - y
 
-    if n == 1
+    if length(u0) == 2
         return expfit_struct(seq, x, y, u, u0, r, eq, eq)
     else
         return expfit_struct(seq, x, y, u, u0, r, eq, eqn)
@@ -117,7 +166,11 @@ function expfit(n::Int, seq::Type{<:NMRInversions.pulse_sequence1D}, x::Vector, 
 
 end
 
+
 function expfit(n::Int, res::NMRInversions.input1D; kwargs...)
     expfit(n, res.seq, res.x, res.y, kwargs...)
 end
 
+function expfit(u0::Vector{Real}, res::NMRInversions.input1D; kwargs...)
+    expfit(u0, res.seq, res.x, res.y, kwargs...)
+end

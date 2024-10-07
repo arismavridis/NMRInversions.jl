@@ -52,6 +52,7 @@ function Makie.plot(res::NMRInversions.inv_out_1D...; kwargs...)
 
 end
 
+
 function Makie.plot!(fig::Union{Makie.Figure,Makie.GridPosition}, res::NMRInversions.inv_out_1D...;
     title="")
 
