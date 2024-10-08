@@ -1,23 +1,3 @@
-"""
-    svd_kernel_struct(K,g,U,S,V)
-A structure containing the following elements:
-- `K`, the kernel matrix.
-- `G`, the data vector.
-- `U`, the left singular values matrix.
-- `S`, the singular values vector.
-- `V`, the right singular values matrix.
-
-To access the fields of a structure, we use the dot notation, 
-e.g. if the structure is called `a` and we want to access the kernel contained in there,
-we type `a.K`
-"""
-struct svd_kernel_struct
-    K::AbstractMatrix
-    g::AbstractVector
-    U::AbstractMatrix
-    S::AbstractVector
-    V::AbstractMatrix
-end
 
 """
 # Create a kernel for the inversion of 1D data.
@@ -96,7 +76,7 @@ end
 - `X_direct` is output "range" of the inversion in the direct dimension (e.g. T₂ times in IRCPMG)
 - `X_indirect` is output "range" of the inversion in the indirect dimension (e.g. T₁ times in IRCPMG)
 - `Data` is the 2D data matrix of complex data.
-The output is an [svd_kernel_struct](@docs)
+The output is an `svd_kernel_struct`
 
 """
 function create_kernel(seq::Type{<:pulse_sequence2D},

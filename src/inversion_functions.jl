@@ -1,22 +1,20 @@
 """
 # Inversion for 1D pulse sequences:
-    invert(seq, x, y [, lims, alpha, order, solver])
+    invert(seq, x, y ; lims, alpha, order, solver)
 
 This function will build a kernel and use it to perform an inversion using the algorithm of your choice.
-The output is an [inv_out_1D](@docs) structure.
+The output is an `inv_out_1D` structure.
 
  Necessary (positional) arguments:
 - `seq` is the 1D pulse sequence (e.g. IR, CPMG, PGSE)
 - `x` is the experiment x axis (time or b factor etc.)
 - `y` is the experiment y axis (intensity of the NMR signal)
 
-Instead of these positional arguments, you can use a single [input1D](@docs) structure, which contains the same information.
-
  Optional (keyword) arguments:
 - `lims=(a,b,c)` will set the "limits" of the output X, so that it starts from 10^a, ends in 10^b and consists of c logarithmically spaced values (default is (-5, 1, 128)). Alternatiively, a vector of values can be used directly (e.g. `lims=[10^-5, ... ,10]` ).
-- `alpha` determines the smoothing term. Use a real number for a fixed alpha.  No selection will lead to automatically determining alpha through the defeault method, which is [gcv](@docs).
+- `alpha` determines the smoothing term. Use a real number for a fixed alpha.  No selection will lead to automatically determining alpha through the defeault method, which is `gcv`.
 - `order` is the order of the regularization. Default is 0.
-- `solver` is the algorithm used to do the inversion math. Default is [brd](@docs).
+- `solver` is the algorithm used to do the inversion math. Default is `brd`.
 
 """
 function invert(seq::Type{<:pulse_sequence1D}, x::AbstractArray, y::Vector;
@@ -60,6 +58,14 @@ function invert(seq::Type{<:pulse_sequence1D}, x::AbstractArray, y::Vector;
 
 end
 
+"""
+    invert(data::input1D ; kwargs...)
+
+Instead of the positional arguments `seq`, `x` and `y`,
+you can use a single `input1D` structure, which contains the same information. 
+Especially useful if you're using the output of one 
+of the import functions (look documentation tutorial section).
+"""
 function invert(data::input1D; kwargs...)
 
     return invert(data.seq, data.x, data.y; kwargs...)
@@ -74,7 +80,7 @@ end
     invert(seq, x_direct, x_indirect, X_direct, X_indirect, Data)
 
 This function will build a kernel and use it to perform an inversion using the algorithm of your choice.
-The output is an [inv_out_2D](@docs) structure.
+The output is an `inv_out_2D` structure.
 
  Necessary (positional) arguments:
 - `seq` is the 2D pulse sequence (e.g. IRCPMG)
@@ -82,16 +88,15 @@ The output is an [inv_out_2D](@docs) structure.
 - `x_indirect` is the indirect dimension acquisition parameter (e.g. all the delay times τ in your IR sequence).
 - `Data` is the 2D data matrix of complex data.
 
-Instead of these positional arguments, you can use a single [input2D](@docs) structure, which contains the same information.
 
  Optional (keyword) arguments:
 - `rdir` determines the output "range" of the inversion in the direct dimension (e.g. T₂ times in IRCPMG)
 - `rindir` determines the output "range" of the inversion in the indirect dimension (e.g. T₁ times in IRCPMG)
  In both cases above, you can use a tuple specifying the limits of the range, or a vector of values, same as the `lims` argument in the 1D inversion.
 
-- `alpha` determines the smoothing term. Use a real number for a fixed alpha.  No selection will lead to automatically determining alpha through the defeault method, which is [gcv](@docs).
+- `alpha` determines the smoothing term. Use a real number for a fixed alpha.  No selection will lead to automatically determining alpha through the defeault method, which is `gcv`.
 - `order` is the order of the regularization. Default is 0.
-- `solver` is the algorithm used to do the inversion math. Default is [brd](@docs).
+- `solver` is the algorithm used to do the inversion math. Default is `brd`.
 
 """
 function invert(
@@ -140,6 +145,16 @@ function invert(
 
 end
 
+
+"""
+    invert(data::input2D ; kwargs...)
+
+Instead of the positional arguments `seq`, `x_direct` ,
+`x_indirect` and `Data`, you can use a single `input2D` 
+structure, which contains the same information. 
+Especially useful if you're using the output of one of the 
+import functions (look documentation tutorial section).
+"""
 function invert(input::input2D; kwargs...)
 
     invert(input.seq, input.x_direct, input.x_indirect, input.data; kwargs...)

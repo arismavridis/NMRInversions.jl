@@ -1,28 +1,3 @@
-export expfit_struct
-"""
-Structure containing information about multiexponential fits.
-
-The fields are as follows:
-- `seq`: The pulse sequence
-- `x` : The x acquisition values (e.g. time for relaxation or b-factor for diffusion).
-- `y` : The y acquisition values.
-- `u` : The fitted parameters for the `mexp` function.
-- `u0` : The initial parameters for the `mexp` function.
-- `r` : The residuals.
-- `eq` : The equation of the fitted function.
-- `eqn` : The equation of the initial function.
-
-"""
-struct expfit_struct
-    seq::Type{<:NMRInversions.pulse_sequence1D}
-    x::Vector
-    y::Vector
-    u::Vector
-    u0::Vector
-    r::Vector
-    eq::String
-    eqn::String
-end
 
 export mexp
 """
@@ -70,10 +45,11 @@ end
 
 export expfit
 """
-    expfit(n, seq, x, y; kwargs...)
+    expfit(n, seq, x, y;solver)
 
 Fit an exponential function to the data `x`, `y` using `n` exponential terms. \n
 Starting points for the nonlinear regression are automatically chosen.
+The outut is an `expfit_struct` structure.
 
 Arguments:
 
@@ -81,8 +57,7 @@ Arguments:
 - `seq` : pulse sequence.
 - `x` : acquisition x parameter (time for relaxation or b-factor for diffusion).
 - `y` : acquisition y parameter (magnetization).
-
-Alternatively, you can also use `expfit(n, data)`, where data is an `input1D` structure.
+- `solver` : optimization solver (default is BFGS).
 """
 function expfit(n::Int, seq::Type{<:NMRInversions.pulse_sequence1D}, x::Vector, y::Vector; kwargs...)
     u0 = (ones(2 * n))
@@ -90,13 +65,30 @@ function expfit(n::Int, seq::Type{<:NMRInversions.pulse_sequence1D}, x::Vector, 
     return expfit(u0, seq, x, y; kwargs...)
 end
 
+"""
+    expfit(n, data::input1D; kwargs...)
+Similar to the `invert` fucntion, `expfit` can be called using an `input1D` structure.
+"""
+function expfit(u0::Vector{Real}, res::NMRInversions.input1D; kwargs...)
+    expfit(u0, res.seq, res.x, res.y, kwargs...)
+end
+
 
 """
     expfit(u0, seq, x, y; solver=BFGS())
 
 Fit an exponential function to the data `x`, `y`. \n
+The outut is an `expfit_struct` structure.
 
-The u0 argument is a vector of initial parameter guesses, 
+Arguments:
+
+- `u0` : initial parameter guesses.
+- `seq` : pulse sequence.
+- `x` : acquisition x parameter (time for relaxation or b-factor for diffusion).
+- `y` : acquisition y parameter (magnetization).
+- `solver` : OptimizationOptimJL solver, defeault choice is BFGS().
+
+The `u0` argument is a vector of initial parameter guesses, 
 and it also determines the number of exponential terms used.
 It should be of the form [a1, b1, a2, b2, ...], 
 where a's are the amplitudes and b's are the reciprocals of the decay constants.
@@ -111,16 +103,6 @@ The following examples might help to clarify: \n
 
 (where a,b,c,d,e,f are numbers of your choice)
 Numbers of parameters beyond tri-exponential can also be used, but it is not recommended.
-
-Arguments:
-
-- `u0` : initial parameter guesses.
-- `seq` : pulse sequence.
-- `x` : acquisition x parameter (time for relaxation or b-factor for diffusion).
-- `y` : acquisition y parameter (magnetization).
-- `solver` : OptimizationOptimJL solver, defeault choice is BFGS().
-
-Alternatively, you can also use `expfit(u0, data)`, where data is an `input1D` structure.
 
 """
 function expfit(u0::Vector, seq::Type{<:NMRInversions.pulse_sequence1D}, x::Vector, y::Vector;
@@ -166,11 +148,11 @@ function expfit(u0::Vector, seq::Type{<:NMRInversions.pulse_sequence1D}, x::Vect
 
 end
 
-
+"""
+    expfit(u0, data::input1D; kwargs...)
+Similar to the `invert` fucntion, `expfit` can be called using an `input1D` structure.
+"""
 function expfit(n::Int, res::NMRInversions.input1D; kwargs...)
     expfit(n, res.seq, res.x, res.y, kwargs...)
 end
 
-function expfit(u0::Vector{Real}, res::NMRInversions.input1D; kwargs...)
-    expfit(u0, res.seq, res.x, res.y, kwargs...)
-end

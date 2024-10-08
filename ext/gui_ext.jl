@@ -2,11 +2,21 @@ module gui_ext
 
 using NMRInversions, GLMakie, PolygonOps, LinearAlgebra, NativeFileDialog
 
-# TESTING
-# res = invert(import_spinsolve(), alpha=0.7)
-# plot(res)
 
 ## Plots for expfits
+"""
+    plot(res::expfit_struct...; kwargs...)
+Plot the results of an `expfit` call. \n
+
+This function can take any number of `expfit_struct` structures as input. \n
+e.g. `plot(data1)` plots the data and the corresponding fit,
+but `plot(data1, data2)` or `plot(data1, data2, data3)` work as well,
+and they plot all of the results on the same plot.
+
+This function creates a figure, 
+and calls `plot!(fig, res)` for each of the results in `res`,
+so please refer to the `plot!` documentation for more information.
+"""
 function Makie.plot(res::expfit_struct...; kwargs...)
 
     f = Figure(size=(500, 500))
@@ -16,9 +26,26 @@ function Makie.plot(res::expfit_struct...; kwargs...)
 
 end
 
+"""
+    plot!(fig, res...; names, markersize, normeq)
 
+Plots the results of an `expfit` call on a figure or a grid position object.
+
+The arguments are:
+
+- `fig` : The figure or grid position object.
+- `res` : One or more `expfit_struct` structures containing the fit results.
+- `names` : Vector with the names of the data (default is a vector of "Data" for each result).
+- `markersize` : The size of the markers (default is 7).
+- `normeq` : Whether to plot the normalised form of the equation or not (default is `true`).
+
+Note that the res inputs are not a vector, but individual `expfit_struct` structures,
+like: plot!(fig, data1, data2, data3).
+If you want to use a vector of `expfit_struct` structures, make sure to 
+splat it by using `...` in the function call (e.g. `plot!(fig, [data1, data2, data3]...)`).
+"""
 function Makie.plot!(fig::Union{Makie.Figure,Makie.GridPosition}, res::expfit_struct...;
-    names=["Data" for _ in res], markersize=7, eqn=true)
+    names=["Data" for _ in res], markersize=7, normeq=true)
 
     # Make axes
     if res[1].seq in [NMRInversions.IR]
@@ -34,7 +61,7 @@ function Makie.plot!(fig::Union{Makie.Figure,Makie.GridPosition}, res::expfit_st
     for (i, r) in enumerate(res)
         xfit = collect(range(0, 1.1 * maximum(r.x), 500))
         scatter!(ax, r.x, r.y, markersize=markersize, label=names[i])
-        lines!(ax, xfit, mexp(r.seq, r.u, xfit), label=getfield(r, eqn == true ? :eqn : :eq))
+        lines!(ax, xfit, mexp(r.seq, r.u, xfit), label=getfield(r, normeq == true ? :eqn : :eq))
     end
 
     axislegend(ax, position=(res[1].seq == IR ? :rb : :rt), nbanks=2)
@@ -43,6 +70,14 @@ end
 
 
 ## Plots for 1D inversions
+
+"""
+    plot(res::NMRInversions.inv_out_1D...; kwargs...)
+
+Plot the results contained in a `inv_out_1D` structure.
+This function can take any number of `inv_out_1D` structures as input. 
+
+"""
 function Makie.plot(res::NMRInversions.inv_out_1D...; kwargs...)
 
     f = Figure(size=(500, 500))
@@ -53,6 +88,20 @@ function Makie.plot(res::NMRInversions.inv_out_1D...; kwargs...)
 end
 
 
+"""
+    plot!(fig, res...; title)
+
+Plot the results contained in a `inv_out_1D` structure on a figure or a grid position object.
+This function can take any number of `inv_out_1D` structures as input.
+
+The arguments are:
+
+- `fig` : The figure or grid position object.
+- `res` : One or more `inv_out_1D` structures containing the fit results.
+
+Keyword (optional) arguments:
+- `title` : Title of the plot.
+"""
 function Makie.plot!(fig::Union{Makie.Figure,Makie.GridPosition}, res::NMRInversions.inv_out_1D...;
     title="")
 
@@ -86,15 +135,42 @@ end
 
 
 ## Plots for 2D inversions
-function Makie.plot(results::NMRInversions.inv_out_2D; kwargs...)
+
+"""
+    plot(results::NMRInversions.inv_out_2D, title::String; kwargs...)
+
+Plot the results contained in a `inv_out_2D` structure.
+
+The arguments are:
+
+- `results` : The `inv_out_2D` structure containing the fit results.
+- `title` : Title of the plot.
+kwargs are passed onto `plot!`.
+"""
+function Makie.plot(results::NMRInversions.inv_out_2D, title::String; kwargs...)
 
     f = Figure(size=(500, 500))
-    plot!(f, results; kwargs...)
+    plot!(f, results; title=title, kwargs...)
 
     return f
 
 end
 
+
+"""
+    plot!(fig, res::NMRInversions.inv_out_2D; title, clmap)
+
+Plot the results contained in a `inv_out_2D` structure on a figure or a grid position object.
+
+The arguments are:
+
+- `fig` : The figure or grid position object.
+- `res` : The `inv_out_2D` structure containing the fit results.
+
+Keyword (optional) arguments:
+- `title` : Title of the plot (default: "").
+- `clmap` : Color map of the plot (default: :tempo).
+"""
 function Makie.plot!(fig::Union{Makie.Figure,Makie.GridPosition}, res::NMRInversions.inv_out_2D;
     title="", clmap=:tempo)
 
@@ -122,6 +198,9 @@ function Makie.plot!(fig::Union{Makie.Figure,Makie.GridPosition}, res::NMRInvers
     )
 
     Makie.deactivate_interaction!(axmain_values, :rectanglezoom) # Disable zoom
+    Makie.deactivate_interaction!(axmain, :rectanglezoom) # Disable zoom
+    Makie.deactivate_interaction!(axright, :rectanglezoom) # Disable zoom
+    Makie.deactivate_interaction!(axtop, :rectanglezoom) # Disable zoom
 
     linkxaxes!(axmain, axtop)
     linkyaxes!(axmain, axright)
@@ -210,7 +289,12 @@ function draw_3d(ax3d, res, sp)
 
 end
 
-function NMRInversions.select_peaks(res::NMRInversions.inv_out_2D)
+
+"""
+    Makie.plot(res::inv_out_2D)
+Run the GUI to plot the results and select peaks you want to label.
+"""
+function Makie.plot(res::NMRInversions.inv_out_2D)
     # begin
     gui = Figure(size=(900, 500))
     Makie.plot!(gui[2:10, 1:9], res)
@@ -219,7 +303,8 @@ function NMRInversions.select_peaks(res::NMRInversions.inv_out_2D)
     axtop = gui.content[2]
     axright = gui.content[3]
     # Legend(gui[5, 10:19], axmain)
-
+    
+    
     # Buttons
     labelb = Button(gui[1, 10:15]; label="Label current selection")
     clearb = Button(gui[2, 10:15]; label="Clear current selection")
