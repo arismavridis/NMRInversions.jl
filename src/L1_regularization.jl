@@ -1,12 +1,3 @@
-"""
-A. Reci et al. / Journal of Magnetic Resonance 281 (2017) 188–198
-
-The particular choice of σ and r is heuristic. 
-A smaller σ will increase the stability while reducing the convergence speed
-of the algorithm. A good compromise between the two was found when σ = 0.1 and r = 10. 
-The best values of σ and r will depend slightly on the scaling of the signal. 
-To avoid this, it is best to normalize the NMR signal to a maximum of 1, a technique which was followed in the cited study.
-"""
 function PDHGM(K::AbstractMatrix, s::AbstractVector, α::Real; tol=10, τ=10 , σ=0.1)
 
     B = inv(LinearAlgebra.I + τ * α * K' * K)

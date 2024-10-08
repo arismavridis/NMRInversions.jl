@@ -59,10 +59,20 @@ struct ripqp <: regularization_solver end
 """
 Primal dual hybrid gradient method for L1 regularization, 
 following [this paper](https://doi.org/10.1016/j.jmr.2017.05.010)
-from Reci et al.
+from Reci et al. / Journal of Magnetic Resonance 281 (2017) 188–198
 It can be used as a "solver" for the invert function.
+
+The particular choice of σ and r is heuristic. 
+A smaller σ will increase the stability while reducing the convergence speed
+of the algorithm. A good compromise between the two was found when σ = 0.1 and r = 10. 
+The best values of σ and r will depend slightly on the scaling of the signal. 
+Therefore, it is best to normalize the NMR signal to a maximum of 1,
+a technique which was followed in the cited study.
 """
-struct pdhgm <: regularization_solver end
+struct pdhgm <: regularization_solver
+    σ::Real
+    r::Real
+end
 
 
 """
