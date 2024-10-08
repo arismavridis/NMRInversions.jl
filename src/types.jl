@@ -57,21 +57,36 @@ struct brd <: regularization_solver end
 struct ripqp <: regularization_solver end
 
 """
+    pdhgm(σ, τ)
 Primal dual hybrid gradient method for L1 regularization, 
 following [this paper](https://doi.org/10.1016/j.jmr.2017.05.010)
-from Reci et al.
+from Reci et al. / Journal of Magnetic Resonance 281 (2017) 188–198
 It can be used as a "solver" for the invert function.
+
+The particular choice of σ and τ is heuristic. 
+A smaller σ will increase the stability while reducing the convergence speed
+of the algorithm. A good compromise between the two was found when σ = 0.1 and τ = 10. 
+The best values of σ and τ will depend slightly on the scaling of the signal. 
+Therefore, it is best to normalize the NMR signal to a maximum of 1,
+a technique which was followed in the cited study.
 """
-struct pdhgm <: regularization_solver end
+struct pdhgm <: regularization_solver
+    σ::Real
+    τ::Real
+end
 
 
 """
+    optim_nnls(order)
 Simple non-negative least squares method for tikhonov (L2) regularization, 
 implemented using OptimizationOptimJl.
 All around effective, but can be slow for large problems, such as 2D inversions.
 It can be used as a "solver" for invert function.
+Order determines the tikhonov matrix. If 0 is chosen, the identity matrix is used.
 """
-struct optim_nnls <: regularization_solver end
+struct optim_nnls <: regularization_solver 
+    order::Int
+end
 
 export regularization_solver, brd, ripqp, pdhgm, optim_nnls
 
