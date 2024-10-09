@@ -8,12 +8,13 @@ using NMRInversions, JuMP, LinearAlgebra, SparseArrays
 # import JuMP: @constraints
 # import JuMP: @objective
 
-function NMRInversions.solve_regularization(K::AbstractMatrix, g::AbstractVector, α::Real, solver::Symbol, order::Int=0)
+function NMRInversions.solve_regularization(K::AbstractMatrix, g::AbstractVector,
+        α::Real, solver::Type{jump_nnls})
 
-    A = sparse([K; √(α) .* NMRInversions.Γ(size(K, 2), order)])
+    A = sparse([K; √(α) .* NMRInversions.Γ(size(K, 2), solver.order)])
     b = sparse([g; zeros(size(A, 1) - size(g, 1))])
 
-    @eval model = JuMP.Model($(solver).Optimizer)
+    @eval model = JuMP.Model($(solver.solver).Optimizer)
     set_silent(model)
     @variable(model, f[1:size(K, 2)] >= 0)
     @variable(model, z[1:size(b, 1)])
@@ -28,7 +29,6 @@ end
 
 
 # other qp formulations
-
 
 #     # set_silent(model)
 #     # @variable(model, f[1:size(K, 2)] >= 0)

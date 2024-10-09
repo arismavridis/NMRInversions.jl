@@ -1,18 +1,5 @@
-using LinearAlgebra
-
-"""
-A. Reci et al. / Journal of Magnetic Resonance 281 (2017) 188–198
-
-The particular choice of σ and r is heuristic. 
-A smaller σ will increase the stability while reducing the convergence speed
-of the algorithm. A good compromise between the two was found when σ = 0.1 and r = 10. 
-The best values of σ and r will depend slightly on the scaling of the signal. 
-To avoid this, it is best to normalize the NMR signal t a maximum of 1, a technique which was followed in this study.
-"""
 function PDHGM(K::AbstractMatrix, s::AbstractVector, α::Real; tol=10, τ=10 , σ=0.1)
 
-    K = K ./ maximum(K)
-    s = s ./ maximum(s)
     B = inv(LinearAlgebra.I + τ * α * K' * K)
     Y = zeros(size(K, 2))
     Ỹ = copy(Y)
@@ -33,3 +20,14 @@ function PDHGM(K::AbstractMatrix, s::AbstractVector, α::Real; tol=10, τ=10 , �
     return f
 end
 
+function solve_regularization(K::AbstractMatrix, g::AbstractVector, α::Real, solver::Type{pdhgm})
+
+    K = K ./ maximum(K)
+    g = g ./ maximum(g)
+
+    f = PDHGM(K, g, α, τ=solver.τ, σ=solver.σ)
+
+    r = K * f - g
+
+    return f, r
+end
