@@ -4,10 +4,11 @@
 In order to take advantage of julia's multiple dispatch, 
 we need to define some structures which can be used as input to our functions.
 
-Structures are object which may contain multiple fields.
-The fields can be accessed using the dot syntax.
-For example, if we have a structure named `foo`, with two fields, `a`, and `b`, 
-we can access the value of `a` using `foo.a` and the value of `b` using `foo.b`.
+!!! info
+    Structures are object which may contain multiple fields.
+    The fields can be accessed using the dot syntax.
+    For example, if we have a structure named `foo`, with two fields, `a`, and `b`, 
+    we can access the value of `a` using `foo.a` and the value of `b` using `foo.b`.
 
 
 ## Pulse sequences
