@@ -2,28 +2,322 @@ module gui_ext
 
 using NMRInversions, GLMakie, PolygonOps, LinearAlgebra, NativeFileDialog
 
-```
-write a function that reads the file and plots everything, use it each time plot is updated,
-    including when  you firts plot it
-```
 
-function NMRInversions.select_peaks(resultsfile::String=pick_file(pwd()))
+## Plots for expfits
+"""
+    plot(res::expfit_struct...; kwargs...)
+Plot the results of an `expfit` call. \n
 
-    inv_results = NMRInversions.readresults(resultsfile)
-    #     return NMRInversions.select_peaks(inv_results)
+This function can take any number of `expfit_struct` structures as input. \n
+e.g. `plot(data1)` plots the data and the corresponding fit,
+but `plot(data1, data2)` or `plot(data1, data2, data3)` work as well,
+and they plot all of the results on the same plot.
 
-    # end
+This function creates a figure, 
+and calls `plot!(fig, res)` for each of the results in `res`,
+so please refer to the `plot!` documentation for more information.
+"""
+function Makie.plot(res::expfit_struct...; kwargs...)
 
-    # function NMRInversions.select_peaks(inv_results::NMRInversions.invres2D)
+    f = Figure(size=(500, 500))
+    plot!(f, res...; kwargs...)
 
-    dir = inv_results.X_dir
-    indir = inv_results.X_indir
-    f = inv_results.f
-    F = collect(reshape(f, length(dir), length(indir))')
+    return f
 
-    x = collect(1:length(indir))
-    y = collect(1:length(dir))
-    z = copy(F)
+end
+
+"""
+    plot!(fig, res...; names, markersize, normeq)
+
+Plots the results of an `expfit` call on a figure or a grid position object.
+
+The arguments are:
+
+- `fig` : The figure or grid position object.
+- `res` : One or more `expfit_struct` structures containing the fit results.
+- `names` : Vector with the names of the data (default is a vector of "Data" for each result).
+- `markersize` : The size of the markers (default is 7).
+- `normeq` : Whether to plot the normalised form of the equation or not (default is `true`).
+
+Note that the res inputs are not a vector, but individual `expfit_struct` structures,
+like: plot!(fig, data1, data2, data3).
+If you want to use a vector of `expfit_struct` structures, make sure to 
+splat it by using `...` in the function call (e.g. `plot!(fig, [data1, data2, data3]...)`).
+"""
+function Makie.plot!(fig::Union{Makie.Figure,Makie.GridPosition}, res::expfit_struct...;
+    names=["Data" for _ in res], markersize=7, normeq=true)
+
+    # Make axes
+    if res[1].seq in [NMRInversions.IR]
+        ax = Axis(fig[1, 1], xlabel="time (s)", ylabel="Signal (a.u.)")
+
+    elseif res[1].seq in [NMRInversions.CPMG]
+        ax = Axis(fig[1, 1], xlabel="time (s)", ylabel="Signal (a.u.)")
+
+    elseif res[1].seq in [NMRInversions.PFG]
+        ax = Axis(fig[1, 1], xlabel="b factor", ylabel="Signal (a.u.)")
+    end
+
+    for (i, r) in enumerate(res)
+        xfit = collect(range(0, 1.1 * maximum(r.x), 500))
+        scatter!(ax, r.x, r.y, markersize=markersize, label=names[i])
+        lines!(ax, xfit, mexp(r.seq, r.u, xfit), label=getfield(r, normeq == true ? :eqn : :eq))
+    end
+
+    axislegend(ax, position=(res[1].seq == IR ? :rb : :rt), nbanks=2)
+
+end
+
+
+## Plots for 1D inversions
+
+"""
+    plot(res::NMRInversions.inv_out_1D...; kwargs...)
+
+Plot the results contained in a `inv_out_1D` structure.
+This function can take any number of `inv_out_1D` structures as input. 
+
+"""
+function Makie.plot(res::NMRInversions.inv_out_1D...; kwargs...)
+
+    f = Figure(size=(500, 500))
+    plot!(f, res...; kwargs...)
+
+    return f
+
+end
+
+
+"""
+    plot!(fig, res...; title)
+
+Plot the results contained in a `inv_out_1D` structure on a figure or a grid position object.
+This function can take any number of `inv_out_1D` structures as input.
+
+The arguments are:
+
+- `fig` : The figure or grid position object.
+- `res` : One or more `inv_out_1D` structures containing the fit results.
+
+Keyword (optional) arguments:
+- `title` : Title of the plot.
+"""
+function Makie.plot!(fig::Union{Makie.Figure,Makie.GridPosition}, res::NMRInversions.inv_out_1D...;
+    title="")
+
+    # Make axes
+    if res[1].seq in [NMRInversions.IR]
+        ax1 = Axis(fig[:, 1], xlabel="time", ylabel="Signal")
+        ax2 = Axis(fig[:, 2], xlabel="T₁", xscale=log10)
+
+    elseif res[1].seq in [NMRInversions.CPMG]
+        ax1 = Axis(fig[:, 1], xlabel="time", ylabel="Signal")
+        ax2 = Axis(fig[:, 2], xlabel="T₂", xscale=log10)
+
+    elseif res[1].seq in [NMRInversions.PFG]
+        ax1 = Axis(fig[:, 1], xlabel="b factor", ylabel="Signal")
+        ax2 = Axis(fig[:, 2], xlabel="D (m²/s)", xscale=log10)
+    end
+
+    for r in res
+        draw_on_axes(ax1, ax2, r)
+    end
+
+end
+
+function draw_on_axes(ax1, ax2, res::NMRInversions.inv_out_1D)
+
+    scatter!(ax1, res.x, res.y)
+    lines!(ax1, res.xfit, res.yfit)
+    lines!(ax2, res.X, res.f)
+
+end
+
+
+## Plots for 2D inversions
+
+"""
+    plot(results::NMRInversions.inv_out_2D, title::String; kwargs...)
+
+Plot the results contained in a `inv_out_2D` structure.
+
+The arguments are:
+
+- `results` : The `inv_out_2D` structure containing the fit results.
+- `title` : Title of the plot.
+kwargs are passed onto `plot!`.
+"""
+function Makie.plot(results::NMRInversions.inv_out_2D, title::String; kwargs...)
+
+    f = Figure(size=(500, 500))
+    plot!(f, results; title=title, kwargs...)
+
+    return f
+
+end
+
+
+"""
+    plot!(fig, res::NMRInversions.inv_out_2D; title, clmap)
+
+Plot the results contained in a `inv_out_2D` structure on a figure or a grid position object.
+
+The arguments are:
+
+- `fig` : The figure or grid position object.
+- `res` : The `inv_out_2D` structure containing the fit results.
+
+Keyword (optional) arguments:
+- `title` : Title of the plot (default: "").
+- `clmap` : Color map of the plot (default: :tempo).
+"""
+function Makie.plot!(fig::Union{Makie.Figure,Makie.GridPosition}, res::NMRInversions.inv_out_2D;
+    title="", clmap=:tempo)
+
+    x = res.X_indir
+    y = res.X_dir
+
+    xplot = collect(range(0, 1, length(x)))
+    yplot = collect(range(0, 1, length(y)))
+
+    # Make axes
+
+    axmain = Axis(fig[3:10, 1:8])
+    axtop = Axis(fig[1:2, 1:8], limits=((xplot[1], xplot[end]), (0, nothing)), title=title, titlesize=17)
+    axright = Axis(fig[3:10, 9:10], limits=((0, nothing), (yplot[1], yplot[end])))
+
+    hidedecorations!(axtop)
+    hidedecorations!(axright)
+    hidedecorations!(axmain)
+
+    axmain_values = Axis(fig[3:10, 1:8],
+        xscale=log10, yscale=log10,
+        xlabel=L"T_1 \, \textrm{(s)}", ylabel=L"T_2 \,\textrm{(s)}",
+        xlabelsize=23, ylabelsize=23,
+        limits=(x[1], x[end], y[1], y[end])
+    )
+
+    Makie.deactivate_interaction!(axmain_values, :rectanglezoom) # Disable zoom
+    Makie.deactivate_interaction!(axmain, :rectanglezoom) # Disable zoom
+    Makie.deactivate_interaction!(axright, :rectanglezoom) # Disable zoom
+    Makie.deactivate_interaction!(axtop, :rectanglezoom) # Disable zoom
+
+    linkxaxes!(axmain, axtop)
+    linkyaxes!(axmain, axright)
+
+    draw_on_axes(axmain, axtop, axright, res, clmap)
+
+end
+
+function draw_on_axes(axmain, axtop, axright, res, clmap)
+
+    empty!(axmain)
+    empty!(axtop)
+    empty!(axright)
+
+    z = res.F' .* res.filter'
+    x = range(0, 1, size(z, 1))
+    y = range(0, 1, size(z, 2))
+
+    # Plots
+    contourf!(axmain, x, y, z, colormap=clmap, levels=50)
+    lines!(axtop, x, vec(sum(z, dims=2)), colormap=clmap, colorrange=(1, 10), color=5, alpha=0.5)
+    lines!(axright, vec(sum(z, dims=1)), y, colormap=clmap, colorrange=(1, 10), color=5, alpha=0.5)
+
+    # Plot diagonal line
+    lines!(axmain, [(0, 0), (1, 1)], color=:black, linewidth=1)
+
+    #Create a matrix for all the discrete points in the space
+    points = [[i, j] for i in x, j in y]
+    mask = zeros(size(points))
+
+    for (i, polygon) in enumerate(res.selections)
+
+        # Selected points only
+        mask .= [PolygonOps.inpolygon(p, polygon; in=1, on=1, out=0) for p in points]
+        spo = mask .* z
+
+        indir_dist = vec(sum(spo, dims=2))
+        dir_dist = vec(sum(spo, dims=1))
+
+        #draw current polygon
+        lines!(axmain, Point2f.(polygon), linestyle=:dash, colormap=:tab10, colorrange=(1, 10), color=i, alpha=0.9)
+
+        T1 = indir_dist ⋅ res.X_indir / sum(spo)
+        T2 = dir_dist ⋅ res.X_dir / sum(spo)
+
+        # Plot peak label
+        xc = vec(sum(spo, dims=2)) ⋅ x / sum(spo)
+        yc = vec(sum(spo, dims=1)) ⋅ y / sum(spo)
+
+        sc = scatter!(axmain, xc, yc, markersize=15,
+            marker=collect('a':'z')[i],
+            colormap=:tab10, colorrange=(1, 10),
+            color=i,
+            glowcolor=:white, glowwidth=4,
+            label=" : T₁/T₂ = $(round(T1/T2 , digits=1)) \n    Volume = $(round(sum(spo)/sum(z) *100 ,digits = 1))%")
+
+
+        text!(axmain, 2.5 * (1 / 100), (99 - 13 * (i - 1)) * (1 / 100),
+            text=
+            collect('a':'z')[i] *
+            " : T₁/T₂ = $(round(T1/T2 , digits=1)) \n     Volume = $(round(sum(spo)/sum(z) *100 ,digits = 1))%",
+            align=(:left, :top), colormap=:tab10, colorrange=(1, 10), color=i)
+
+        # lines!(axtop, indir_dist[], linestyle=:dash, colormap=:tab10, colorrange=(1, 10), color=i, alpha=0.5)
+        # lines!(axright, dir_dist[], 1:length(res.X_dir), linestyle=:dash, colormap=:tab10, colorrange=(1, 10), color=i, alpha=0.5)
+        # axislegend( axmain,  framevisible=false)
+
+    end
+
+end
+
+function dynamic_plots(axmain, axtop, axright, selection, polygon)
+
+    scatter!(axmain, selection, colormap=:tab10, colorrange=(1, 10), color=8)
+    lines!(axmain, polygon, colormap=:tab10, colorrange=(1, 10), color=8)
+
+end
+
+function draw_3d(ax3d, res, sp)
+
+    surface!(ax3d, res.F' .* res.filter', colormap=:tempo)
+
+    surface!(ax3d, spo, colormap=:blues,
+        colorrange=(minimum(filter(x -> x != 0, vec(z))), maximum(z)),
+        lowclip=:transparent)
+
+end
+
+
+"""
+    Makie.plot(res::inv_out_2D)
+Run the GUI to plot the results and select peaks you want to label.
+"""
+function Makie.plot(res::NMRInversions.inv_out_2D)
+    # begin
+    gui = Figure(size=(900, 500))
+    Makie.plot!(gui[2:10, 1:9], res)
+
+    axmain = gui.content[1]
+    axtop = gui.content[2]
+    axright = gui.content[3]
+    # Legend(gui[5, 10:19], axmain)
+    
+    
+    # Buttons
+    labelb = Button(gui[1, 10:15]; label="Label current selection")
+    clearb = Button(gui[2, 10:15]; label="Clear current selection")
+    resetb = Button(gui[1, 15:19]; label="Reset everything")
+    filterb = Button(gui[2, 15:19]; label="Filter-out unselected")
+    saveb = Button(gui[3, 15:19]; label="Save plot (WIP)")
+
+    # Title textbox
+    tb = Textbox(gui[1, 2:7], placeholder="Insert a title for the plot, then press enter.", width=300, reset_on_defocus=true)
+
+    z = res.F' .* res.filter'
+    x = collect(range(0, 1, size(z, 1)))
+    y = collect(range(0, 1, size(z, 2)))
 
     #Create a matrix for all the discrete points in the space
     points = [[i, j] for i in x, j in y] #important, used by inpolygon later
@@ -40,378 +334,106 @@ function NMRInversions.select_peaks(resultsfile::String=pick_file(pwd()))
     selection = Observable(Point{2,Float32}[])
     polygon = Observable(Point{2,Float32}[])
 
-    # Peak selection counter
-    peak_counter = 0
-
-    # Create figure and axes
-    GLMakie.activate!(float=true) # Keep plot window on top
-    f = Figure(size=(700, 700))
-    m = GridLayout(f[1, 1:2])
-    n = GridLayout(f[2:3, 2])
-    b = GridLayout(f[2, 1])
-    ax3d = Axis3(n[1, 1])
-
-    # Title textbox
-    tb = Textbox(f[3, 1], placeholder="Insert a title for the plot, then press enter.",
-        width=300, reset_on_defocus=true)
+    # Dynamic plots
+    dynamic_plots(axmain, axtop, axright, selection, polygon)
 
 
-    axmain = Axis(m[2, 1])
-    axtop = Axis(m[1, 1])
-    axright = Axis(m[2, 2])
+    begin ## SELECTING POINTS
 
+        # Pick points by clicking the plot
+        spoint = select_point(gui.content[1].scene, marker=:circle)
+        # Update selection Observable by pushing the selected point to it
+        on(spoint) do _
+            push!(selection[], spoint[])
+            selection[] = selection[] # Update explicitly so that the plots are updated automatically
 
-    # Create another axis just to show the actual limits of the plot, 
-    # since array indices are used on the previous axis
-    abs(log10(dir[1])) + abs(log10(dir[end]))
-
-    axmainr = Axis(m[2, 1],
-        xscale=log10, yscale=log10,
-        xlabel=L"T_1 \, \textrm{(s)}", ylabel=L"T_2 \,\textrm{(s)}",
-        xlabelsize=23, ylabelsize=23,
-        limits=(indir[1], indir[end], dir[1], dir[end]))
-
-    colsize!(m, 1, Fixed(300))
-    rowsize!(m, 2, Fixed(300))
-    rowsize!(m, 1, Aspect(1, 0.25))
-    colsize!(m, 2, Aspect(1, 1))
-
-    Makie.deactivate_interaction!(axmain, :rectanglezoom) # Disable zoom
-    Makie.deactivate_interaction!(axmainr, :rectanglezoom) # Disable zoom
-    linkyaxes!(axmain, axright)
-    linkxaxes!(axmain, axtop)
-    # linkxaxes!(axmain, ax3d)
-    # linkyaxes!(axmain, ax3d)
-
-
-    hidedecorations!(axtop)
-    hidedecorations!(axright)
-    hidedecorations!(axmain)
-    hidedecorations!(ax3d)
-
-    colgap!(m, 0)
-    rowgap!(m, 0)
-
-    function drawplots()
-
-        empty!(axmain)
-        empty!(axtop)
-        empty!(axright)
-        empty!(ax3d)
-
-        # Static plots
-        contourf!(axmain, z, colormap=:tempo, levels=50)
-        lines!(axtop, vec(sum(z, dims=2)), colormap=:tempo, colorrange=(1, 10), color=5, alpha=0.5)
-        lines!(axright, vec(sum(z, dims=1)), 1:length(dir), colormap=:tempo, colorrange=(1, 10), color=5, alpha=0.5)
-        # Plot diagonal line
-        lines!(axmain, [(0, 0), (length(indir), length(dir))], color=:black, linewidth=1)
-
-        surface!(ax3d, x, y, z, colormap=:tempo)
-
-        # Dynamic plots
-        contourf!(axmain, spo, mode=:relative, levels=range(0.01, 1, 20), extendlow=:transparent, extendhigh=:transparent, colormap=:blues)
-        lines!(axtop, indir_dist, colormap=:tab10, colorrange=(1, 10), color=8)
-        lines!(axright, dir_dist, 1:length(dir), colormap=:tab10, colorrange=(1, 10), color=8)
-
-        surface!(ax3d, x, y, spo, colormap=:blues,
-            colorrange=(minimum(filter(x -> x != 0, vec(z))), maximum(z)),
-            lowclip=:transparent)
-
-        # Plot the points in the selection vector
-        scatter!(axmain, selection, colormap=:tab10, colorrange=(1, 10), color=8)
-        lines!(axmain, polygon, colormap=:tab10, colorrange=(1, 10), color=8)
-    end
-
-    drawplots()
-
-    # Pick points by clicking the plot
-    spoint = select_point(axmain.scene, marker=:circle)
-
-    # Update selection Observable by pushing the selected point to it
-    on(spoint) do _
-        push!(selection[], spoint[])
-        selection[] = selection[] # Update explicitly so that the plots are updated automatically
-
-        if size(selection[], 1) > 2
-            polygon[] = vcat(selection[], [selection[][1]])
-            mask[] = [PolygonOps.inpolygon(p, polygon[]; in=1, on=1, out=0) for p in points]
+            if size(selection[], 1) > 2
+                polygon[] = vcat(selection[], [selection[][1]])
+                mask[] = [PolygonOps.inpolygon(p, polygon[]; in=1, on=1, out=0) for p in points]
+            end
         end
 
-    end
+    end ## SELECTING POINTS
 
 
-    # Label current selection button
-    labelb = Button(b[1, 1]; label="Label current \nselection")
+    begin ## BUTTON CLICKS
 
-    on(labelb.clicks) do _
+        on(labelb.clicks) do _
 
-        if size(selection[], 1) < 3
-            @warn("You need to make a selection.")
-        else
+            if size(selection[], 1) < 3
+                @warn("You need to make a selection.")
+            else
 
-            peak_counter += 1
+                push!(res.selections, polygon[])
 
-            #draw current polygon
-            lines!(axmain, polygon[], linestyle=:dash, colormap=:tab10, colorrange=(1, 10), color=peak_counter, alpha=0.9)
+                draw_on_axes(axmain, axtop, axright, res, :tempo)
+                dynamic_plots(axmain, axtop, axright, selection, polygon)
 
-            # Plot peak label
-            xc = vec(sum(spo[], dims=2)) ⋅ collect(1:size(spo[], 1)) / sum(spo[])
-            yc = vec(sum(spo[], dims=1)) ⋅ collect(1:size(spo[], 2)) / sum(spo[])
-            scatter!(axmain, xc, yc, markersize=15,
-                marker=collect('a':'z')[peak_counter],
-                colormap=:tab10, colorrange=(1, 10),
-                color=peak_counter,
-                glowcolor=:white, glowwidth=4)
+                # Clear for next selection
+                selection[] = Point{2,Float32}[]
+                polygon[] = Point{2,Float32}[]
+                mask[] = zeros(size(points))
 
-            T1 = vec(sum(spo[], dims=2)) ⋅ indir / sum(spo[])
-            T2 = vec(sum(spo[], dims=1)) ⋅ dir / sum(spo[])
-
-            text!(axmain, 2.5 * (length(indir) / 100), (99 - 13 * (peak_counter - 1)) * (length(dir) / 100),
-                text=
-                collect('a':'z')[peak_counter] *
-                " : T₁/T₂ = $(round(T1/T2 , digits=1)) \n     Volume = $(round(sum(spo[])/sum(z) *100 ,digits = 1))%",
-                align=(:left, :top), colormap=:tab10, colorrange=(1, 10), color=peak_counter)
-
-            lines!(axtop, indir_dist[], linestyle=:dash, colormap=:tab10, colorrange=(1, 10), color=peak_counter, alpha=0.5)
-            lines!(axright, dir_dist[], 1:length(dir), linestyle=:dash, colormap=:tab10, colorrange=(1, 10), color=peak_counter, alpha=0.5)
-
-            # Add info to the file
-            open(resultsfile, "a") do file
-                println(file, "Selection " * collect('a':'z')[peak_counter] *
-                              " : T1=$T1 , T2=$T2 , T1/T2=$(T1/T2) , VolFraction=$(sum(spo[])/sum(z)) , Polygon Selection : " *
-                              join(reduce(vcat, [[polygon[][i][1], polygon[][i][2]] for i in axes(polygon[], 1)]), ", ")
-                )
+                reset_limits!(axmain)
             end
 
+        end
 
-            # Clear for next selection
+        on(clearb.clicks) do _
+
             selection[] = Point{2,Float32}[]
             polygon[] = Point{2,Float32}[]
             mask[] = zeros(size(points))
 
-            reset_limits!(axmain)
         end
 
-    end
+        on(filterb.clicks) do _
 
-    # Collect points button
-    singlepeakb = Button(b[2, 1]; label="Select \nsingle peak")
+            if size(selection[], 1) < 3
+                @warn("You need to make a selection.")
+            else
 
-    on(singlepeakb.clicks) do _
-
-        if size(selection[], 1) < 3
-            spo[] = F
-        end
-
-        T1 = vec(sum(spo[], dims=2)) ⋅ indir / sum(spo[])
-        T2 = vec(sum(spo[], dims=1)) ⋅ dir / sum(spo[])
-
-        drawplots()
-        peak_counter = 0
-
-        text!(axmain, 20, 90,
-            text="T₁/T₂ = $(round(T1/T2 , digits=1))",
-            align=(:left, :top), offset=(4, 0))
-
-
-        # Clear for next selection
-        selection[] = Point{2,Float32}[]
-        polygon[] = Point{2,Float32}[]
-        mask[] = zeros(size(points))
-
-    end
-
-    # Clear current selection button
-    clearb = Button(b[1, 2]; label="Clear current \nselection")
-    on(clearb.clicks) do _
-        selection[] = Point{2,Float32}[]
-        polygon[] = Point{2,Float32}[]
-        mask[] = zeros(size(points))
-
-    end
-
-    # Reset Selection button
-    resetb = Button(b[2, 3]; label="Reset all")
-
-    on(resetb.clicks) do _
-        z = copy(F)
-        spo = @lift(($mask .* $z))
-        selection[] = Point{2,Float32}[]
-        polygon[] = Point{2,Float32}[]
-        mask[] = zeros(size(points))
-        drawplots()
-        peak_counter = 0
-
-        # Rewrite the file, keeping only the first 7 lines
-        lines = readlines(resultsfile)
-        lines_to_keep = lines[1:min(7, end)]
-        open(resultsfile, "w") do io
-            for line in lines_to_keep
-                write(io, line * "\n")
-            end
-        end
-
-    end
-
-    # Clear non-selected
-    artclearb = Button(b[1, 3]; label="Delete \nnon-selected")
-
-    on(artclearb.clicks) do _
-
-        if size(selection[], 1) < 3
-            @warn("You need to make a selection.")
-        else
-            # Rewrite the file, keeping only the first 7 lines plus polygon selection
-            lines = readlines(resultsfile)
-            lines_to_keep = lines[1:min(7, end)]
-            open(resultsfile, "w") do io
-                for line in lines_to_keep
-                    write(io, line * "\n")
-                end
-
-                write(io, "Keep data within: ")
-                write(io,
-                    join(reduce(vcat, [[polygon[][i][1], polygon[][i][2]] for i in axes(polygon[], 1)]), ", ") * "\n"
-                )
+                res.filter .= res.filter .* [PolygonOps.inpolygon(p, polygon[]; in=1, on=1, out=0) for p in points]'
             end
 
-            z = spo[]
-            spo = @lift(($mask .* $z))
+            draw_on_axes(axmain, axtop, axright, res, :tempo)
+            dynamic_plots(axmain, axtop, axright, selection, polygon)
+
             selection[] = Point{2,Float32}[]
             polygon[] = Point{2,Float32}[]
             mask[] = zeros(size(points))
-            drawplots()
-            peak_counter = 0
-        end
-    end
-
-    # Export figure button
-    exportb = Button(b[2, 2]; label="Export")
-
-    on(exportb.clicks) do _
-        if isnothing(tb.stored_string[])
-            NMRInversions.pubfig(resultsfile, title="")
-        else
-            NMRInversions.pubfig(resultsfile, title=tb.stored_string[])
-        end
-    end
-
-    reset_limits!(axmain)
-    f
-
-end
-
-
-function NMRInversions.pubfig(file="inversion_results.txt"; title="", ppu=2)
-
-    invres = NMRInversions.readresults(file)
-    dir = invres.X_dir
-    indir = invres.X_indir
-    f = invres.f
-
-    x = collect(1:length(indir))
-    y = collect(1:length(dir))
-    z = collect(reshape(f, length(dir), length(indir))')
-
-    #Look if there is any deleted selection
-    open(file) do io
-
-        readuntil(io, "Keep data within: ")
-        if !eof(io) # if you don't hit the end of the file...
-            # ...the rest of the line is the polygon selection, read it and parse it into Point2f format
-            a = parse.(Float32, split(readline(io), ", "))
-            apolygon = [Point2f(a[i], a[i+1]) for i in 1:2:length(a)]
-
-            #Create a matrix for all the discrete points in the space
-            points = [[i, j] for i in x, j in y]
-
-            mask = [inpolygon(p, apolygon; in=1, on=1, out=0) for p in points]
-
-            # Keep selected points only in the z matrix
-            z .= mask .* z
 
         end
-    end
-
-    m = Figure(size=(450, 460))
-    axmain = Axis(m[2, 1], limits=(x[1], x[end], y[1], y[end]))
-    axtop = Axis(m[1, 1], limits=((x[1], x[end]), (0, nothing)), title=title, titlesize=17)
-    axright = Axis(m[2, 2], limits=((0, nothing), (y[1], y[end])))
-
-    axmainr = Axis(m[2, 1],
-        xscale=log10, yscale=log10,
-        xlabel=L"T_1 \, \textrm{(s)}", ylabel=L"T_2 \,\textrm{(s)}",
-        xlabelsize=23, ylabelsize=23,
-        limits=(indir[1], indir[end], dir[1], dir[end])
-    )
-
-    rowsize!(m.layout, 2, 300)
-    colsize!(m.layout, 1, 300)
-    rowsize!(m.layout, 1, Aspect(1, 0.25))
-    colsize!(m.layout, 2, Aspect(1, 1))
-
-    hidedecorations!(axtop)
-    hidedecorations!(axright)
-    hidedecorations!(axmain)
-    colgap!(m.layout, 0)
-    rowgap!(m.layout, 0)
-
-    # Plots
-    contourf!(axmain, x, y, z, colormap=:tempo, levels=50)
-    lines!(axtop, vec(sum(z, dims=2)), colormap=:tempo, colorrange=(1, 10), color=5, alpha=0.5)
-    lines!(axright, vec(sum(z, dims=1)), 1:length(dir), colormap=:tempo, colorrange=(1, 10), color=5, alpha=0.5)
-    # Plot diagonal line
-    lines!(axmain, [(0, 0), (length(indir), length(dir))], color=:black, linewidth=1)
 
 
-    # Look for selections in the text file and print them on the plot
-    open(file) do io
-        i = 1
-        while true
-            readuntil(io, "Selection " * collect('a':'z')[i] * " : ")
+        on(resetb.clicks) do _
+            res.filter .= ones(size(res.F))
+            empty!(res.selections)
 
-            if eof(io)
-                break
+            draw_on_axes(axmain, axtop, axright, res, :tempo)
+            dynamic_plots(axmain, axtop, axright, selection, polygon)
+
+            selection[] = Point{2,Float32}[]
+            polygon[] = Point{2,Float32}[]
+            mask[] = zeros(size(points))
+        end
+
+        on(saveb.clicks) do _
+
+            ttl = ""
+            if !isnothing(tb.stored_string[])
+                ttl = tb.stored_string[]
             end
 
-            # Read useful data from file
-            line = readuntil(io, "Polygon Selection : ")
-            matches = match(r"T1=([\d\.e-]+)\s*,\s*T2=([\d\.e-]+)\s*,.*VolFraction=([\d\.e-]+)", line)
-            T1 = parse(Float64, matches.captures[1])
-            T2 = parse(Float64, matches.captures[2])
-            VolFraction = parse(Float64, matches.captures[3])
+            f = plot(res, title=ttl)
 
-            # The rest of the line is the polygon selection, read it and parse it into Point2f format
-            x = parse.(Float32, split(readline(io), ", "))
-            apolygon = [Point2f(x[i], x[i+1]) for i in 1:2:length(x)]
-
-            #draw current polygon
-            lines!(axmain, apolygon, linestyle=:dash, colormap=:tab10, colorrange=(1, 10), color=i, alpha=0.9)
-
-
-            #add peak "center of mass" label
-            scatter!(axmainr, T1, T2, markersize=15,
-                marker=collect('a':'z')[i],
-                colormap=:tab10, colorrange=(1, 10),
-                color=i,
-                glowcolor=:white, glowwidth=4)
-
-            #add text to plot
-            text!(axmain, 2.5 * (length(indir) / 100), (99 - 13 * (i - 1)) * (length(dir) / 100),
-                text=
-                collect('a':'z')[i] *
-                " : T₁/T₂ = $(round(T1/T2 , digits=1)) \n     Volume = $(round(VolFraction*100 ,digits = 1))%",
-                align=(:left, :top), colormap=:tab10, colorrange=(1, 10), color=i
-            )
-
-            # Look for the next selection (if it exists)
-            i += 1
         end
-    end
 
-    Makie.save(joinpath(dirname(file),"Results.png"), m, px_per_unit=ppu)
+    end ## BUTTON CLICKS
+
+    gui
+end
 
 end
 
 
-end
