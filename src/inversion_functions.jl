@@ -11,7 +11,11 @@ The output is an `inv_out_1D` structure.
 - `y` is the experiment y axis (intensity of the NMR signal)
 
  Optional (keyword) arguments:
-- `lims=(a,b,c)` will set the "limits" of the output X, so that it starts from 10^a, ends in 10^b and consists of c logarithmically spaced values (default is (-5, 1, 128)). Alternatiively, a vector of values can be used directly (e.g. `lims=[10^-5, ... ,10]` ).
+- `lims=(a,b,c)` will set the "limits" of the output X, 
+so that it starts from 10^a, ends in 10^b and consists of c 
+logarithmically spaced values (default is (-5, 1, 128)). 
+Alternatiively, a vector of values can be used directly 
+(e.g. `lims=[10^-5, ... ,10]` ).
 - `alpha` determines the smoothing term. Use a real number for a fixed alpha.  No selection will lead to automatically determining alpha through the defeault method, which is `gcv`.
 - `solver` is the algorithm used to do the inversion math. Default is `brd`.
 
@@ -21,12 +25,10 @@ function invert(seq::Type{<:pulse_sequence1D}, x::AbstractArray, y::Vector;
     alpha::Union{Real, smoothing_optimizer, Type{<:smoothing_optimizer}}=gcv, 
     solver::Union{regularization_solver, Type{<:regularization_solver}}=brd)
 
-    if typeof(lims) == Tuple{Real, Real, Int}
+    if isa(lims, Tuple)
         X = exp10.(range(lims...))
-    elseif typeof(lims) == AbstractVector
+    elseif isa(lims, AbstractVector)
         X = lims
-    else
-        error("lims keyword argument must be a tuple or a vector")
     end
 
     α = 1 #placeholder, will be replaced below 
@@ -105,20 +107,16 @@ function invert(
     alpha::Union{Real, smoothing_optimizer, Type{<:smoothing_optimizer}}=gcv, 
     solver::Union{regularization_solver, Type{<:regularization_solver}}=brd)
 
-    if typeof(rdir) == Tuple{Real, Real, Int}
+    if isa(rdir, Tuple)
         X_direct = exp10.(range(rdir...))
-    elseif typeof(rdir) == AbstractVector
+    elseif isa(rdir, AbstractVector)
         X_direct = lims
-    else
-        error("rdir keyword argument must be a tuple or a vector")
     end
 
-    if typeof(rindir) == Tuple{Real, Real, Int}
+    if isa(rindir, Tuple)
         X_indirect = exp10.(range(rindir...))
-    elseif typeof(rindir) == AbstractVector
+    elseif isa(rindir, AbstractVector)
         X_indirect = lims
-    else
-        error("rindir keyword argument must be a tuple or a vector")
     end
 
 
