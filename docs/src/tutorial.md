@@ -1,69 +1,83 @@
-Here are some examples on how to use the package.
+## Intro
 
-# 1D inversion
-Suppose we would like to perform an inversion for a CPMG experiment.
-We need some data to work with, so let's create some.
+This page will give you a basic idea about how to use the NMRInversions package.
+For more details, it's best to refer to the [functions](functions.md) page.
+
+!!! hint
+    All of the commands mentioned below should be typed in the julia console, 
+    or saved in a text file with the .jl extension, to be used 
+    from a terminal with `julia file.jl`, or through an IDE such as VSCode.
+
+
+# Performing an inversion
+
+Suppose we're working with data coming from a Spinsolve instrument.
+Then we can do the following:
 
 ```julia
 using NMRInversions
 
-# Define the experiment's time acquisition range (in seconds)
-x = collect(range(0.0001,2,500)) 
-
-# Range of relaxation times
-X = exp10.(range(-5, 1, 128)) 
-
-# Create a kernel matrix
-K = create_kernel(CPMG, x, X) 
-
-# Create a distribution of relaxation times
-f_custom = [0.5exp.(-(x)^2 / 3) + exp.(-(x - 1.3)^2 / 0.5) for x in range(-5, 5, length(X))]
-
-# Use the "forward problem" to create the NMR signal from the T2 distribution
-g = K * f_custom
-
-# Add some noise to the data
-y = g + 0.005 * maximum(g) .* randn(length(x))
+data = import_spinsolve()
 ```
 
-Now we have the data, the inversion can be performed using a single line of code!
+!!! info
+    Since we called the `import_spinsolve` function without an argument, 
+    it'll open a file dialog for us to select the files we want to import.
+    (note that `import_spinsolve` requires two files, the `aqcu.par` file,
+    plus the file containing the experiment data.)
+
+Now we have the data imported, the inversion can be performed using a single line of code!
 
 ```julia
-results = invert(CPMG, x, y, alpha=gcv)
+results = invert(data)
 ```
 
-And the results can easily be visualised through the GLMakie extension of the package.
+!!! info
+    The `results` variable above is an `inv_out_1D` or `inv_out_2D` structure, 
+    which contains all the relevant information produced by the `inversion` function.
+    To access that information, we can look at the fields of the structure using the dot notation.
+    The field names can be shown by using the REPL help mode (typing ? at the julia> prompt), 
+    and typing the variable's name (in this case ?results). 
+    Alternatively, running `@doc results` will also give you the same answers.
+The results can easily be visualised through the GLMakie extension of the package.
 
 ```julia
 using GLMakie
 plot(results)
 ```
 
-The `results` variable is an `inv_out_1D` structure, which contains all the relevant information produced by the `inversion` function.
-To access that information, we can look at the fields of the structure using the dot notation.
-The field names can be shown by using the REPL help mode (typing ? at the julia> prompt), 
-and typing the variable's name (in this case ?results). 
-Alternatively, running `@doc results` will also give you the same answers.
-For example, the vector of values for the relaxation time distribution can be accessed as `results.f`
-and the regularization parameter can be accessed as `results.alpha`.
+!!! info
+    The `plot` function of GLMakie is modified by this package 
+    to work with results from the invert function as arguments.
+    It's really easy to use, but if you want more control 
+    on how your plots look, it's best to create them from scratch 
+    using all the tools available in GLMakie.
 
-In the example above, the arguments we fed into the `invert()` function were the pulse sequence, 
-the time values, and the NMR signal corresponding to each time value. 
-Importing data using function such as `import_spinsolve` make things simpler, 
-since they return an `input1D` structure which can be used directly in the `invert` function as:
+Or, if the plot is all you need, one line of code is enough:
+
 ```julia
-invert(import_spinsolve())
+using NMRInversions, GLMakie
+plot(invert(import_spinsolve()))
 ```
 
-# 2D inversion
-Let's try with a T1-T2 experiment, using the IR-CPMG sequence.
-Again, we start by creating some data.
+Note that the workflow above can work for both 1D and 2D inversions!
 
 
-# Importing data
+# Using the expfit function
 
-This package offfers functions to easily import data from various instruments into input1D / input2D structures to be used by the inversion functions.
+In a similar way, we can perform various exponential 
+fits to the imported data using the `expfit` function.
 
-## Spinsolve format
-## Geospec format
-## Stelar format
+```julia
+using NMRInversions, GLMakie
+
+data = import_spinsolve()
+
+a = expfit(1, data)  # mono-exponential fit
+b = expfit(2, data)  # bi-exponential fit
+
+plot(a,b)  # Visualize both on the same plot
+
+a.eqn  # Print the equation of the mono-exponential fit
+b.eqn  # Print the equation of the bi-exponential fit
+```

@@ -1,21 +1,51 @@
-This page contains the documentation for various useful functions that can be used.
+# Intro
+This page contains the documentation for various useful 
+functions in the NMRInversions package.
 
-From the julia command line, you can enter '?', 
-followed by the name of any function, struct, 
-or object you want to learn more about (try it!).
+!!! tip
+    From the julia command line, you can enter '?', 
+    followed by the name of any function, struct, 
+    or object you want to learn more about (try it!).
+    After typing `using NMRInversions` in the julia console, 
+    this feature will work for all the functions mentioned below.
 
-In julia, function definitions look like this:
-`foo(x, y ; z)`
-Where `x` and `y` are the necessary arguments for the function to work, 
-and everything after the semicolon `;` is an optional keyword argument.
-In the example above, we can call the function by typing `foo(1, 2)`,
-(in which case the default value for `z` will be used), or by typing `foo(1, 2, z=3)`,
-to specify the value for z. Sometimes, if there are many keyword arguments, we write 
-the function as foo(x, y ; kwargs...). 
-For the necessary arguments before the semicolon, order matters. 
-For the keyword arguments after the semicolon, order does not matter, but the name of each argument must be specified.
+!!! info 
+    In julia, function definitions look like this:
+    ```
+    foo(x, y, z ; a, b)
+    ``` 
+
+    For the example above, `foo` is the name of the function, 
+    and the contents of the parenteses are the arguments.  
+    Within the parenteses, we got two types of arguments:
+    - Positional arguments
+     
+    Everything that appears before the semicolon `;` 
+    (x,y and z in this example) is necessary,
+    and must be given in a specific order.
+    - Keyword arguments.
+
+    Everything that appears after the semicolon `;` 
+    (b and a in this example) is optional,
+    and can be given in any order, but its name must be specified.
+
+    In the example above, we can call the function by typing `foo(1, 2, 3)`,
+    (in which case, x=1, y=2, z=3, and the default value for `a` and `b` will be used). 
+    You can also call the function by typing `foo(1, 2, 3, a=3)`, to specify the value for `a`, 
+    or by typing `foo(1, 2, 3, b=3, a = 2)`, to specify the value for both `a` and `b`.
+
+    Sometimes, if there are many keyword arguments, we write 
+    the function as foo(x, y ; kwargs...). 
+    For the necessary arguments before the semicolon, order matters. 
+    For the keyword arguments after the semicolon, order does not matter, 
+    but the name of each argument must be specified.
+    For more information, please refer to [this link](https://docs.julialang.org/en/v1/manual/functions/).
 
 # Importing data functions
+This package offers some functions to import NMR experiment data of various formats.
+If a format you're working with is not yet supported, 
+please [submit an issue](https://github.com/arismavridis/NMRInversions.jl/issues/new) 
+and we'll work on it.
 
 # Inversion functions
 The most important function is `invert()`, which is the main function of the package.

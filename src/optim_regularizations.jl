@@ -1,5 +1,5 @@
 
-function solve_regularization(K::AbstractMatrix, g::AbstractVector, α::Real, solver::Type{brd}, order::Int=0)
+function solve_regularization(K::AbstractMatrix, g::AbstractVector, α::Real, solver::Type{brd})
 
     optf = Optimization.OptimizationFunction(objective_f, grad=gradient_f, hess=hessian_f)
     prob = Optimization.OptimizationProblem(optf, ones(size(K, 1)), (α, g, K))
@@ -28,9 +28,9 @@ function hessian_f(H, c, p=(α, data, K))
 end
 
 
-function solve_regularization(K::AbstractMatrix, g::AbstractVector, α::Real, solver::Type{optim_nnls}, order::Int=0)
+function solve_regularization(K::AbstractMatrix, g::AbstractVector, α::Real, solver::optim_nnls)
 
-    A = sparse([K; √(α) .* NMRInversions.Γ(size(K, 2), order)])
+    A = sparse([K; √(α) .* NMRInversions.Γ(size(K, 2), solver.order)])
     b = sparse([g; zeros(size(A, 1) - size(g, 1))])
 
     f = solve_nnls(A, b)

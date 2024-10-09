@@ -46,9 +46,11 @@ export pulse_sequence1D, pulse_sequence2D, IR, SR, CPMG, PFG, IRCPMG, PFGCPMG
 abstract type regularization_solver end 
 
 """
+    brd
 Solver for tikhonov (L2) regularization, following [this paper](https://doi.org/10.1109/78.995059)
 from Venkataramanan et al.
 Very fast, but only uses the identity as tiknohonov matrix.
+No options required, it just works.
 It can be used as a "solver" for the invert function.
 """
 struct brd <: regularization_solver end
@@ -88,18 +90,35 @@ struct optim_nnls <: regularization_solver
     order::Int
 end
 
-export regularization_solver, brd, ripqp, pdhgm, optim_nnls
+"""
+    jump_nnls(order, solver)
+Jump non-negative least squares method for tikhonov (L2) regularization, 
+implemented using the JuMP extension.
+All around effective, but can be slow for large problems, such as 2D inversions, 
+unless a powerful solver like gurobi is used.
+The solver argument is parsed directly into JuMP.
+It can be used as a "solver" for invert function.
+Order determines the tikhonov matrix. If 0 is chosen, the identity matrix is used.
+"""
+struct jump_nnls <: regularization_solver 
+    order::Int
+    solver::Symbol
+end
+
+export regularization_solver, brd, ripqp, pdhgm, optim_nnls, jump_nnls
 
 # Supported methods to determine regularization α parameter
 abstract type smoothing_optimizer end
 
 """
+    gcv
 Generalized cross validation for finding the optimal regularization parameter α.
 """
 struct gcv <: smoothing_optimizer end
 
 
 """
+    lcurve
 L curve method for finding the optimal regularization parameter α.
 """
 struct lcurve <: smoothing_optimizer end

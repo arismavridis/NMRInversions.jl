@@ -1,11 +1,11 @@
 ---
-title: 'NMRInversions.jl, a Julia package for time-domain Nuclear Magnetic Resonance.'
+title: 'NMRInversions.jl, a julia package for time-domain Nuclear Magnetic Resonance.'
 date: xx/xx/xxxx 
 tags:
   - Magnetic Resonance
   - NMR relaxation
   - NMR diffusion
-  - Julia
+  - julia
   - Inverse problems
   - Numerical inversion
 authors:
@@ -31,7 +31,7 @@ https://joss.readthedocs.io/en/latest/example_paper.html
 
 This package provides a library of functions as a user-friendly interface, 
 to perform time-domain NMR data processing and visualizations.
-It is aimed towards people who are not necessarily familiar with the Julia programming language.
+It is aimed towards people who are not necessarily familiar with the julia programming language.
 
 Functionality includes importing data from various NMR instrument formats,
 performing phase-correction on raw data, fitting exponential decays using numerical inversions, and visualizing these results.
@@ -56,9 +56,9 @@ computing applications, with several optimization libaries able to tackle the pr
 
 This can enable easy integration with the latest advances from the literature, 
 without the need for writing solvers in low-level languages for performance purposes, 
-in line with Julia's philosophy of solving the "two language problem".
+in line with julia's philosophy of solving the "two language problem".
 
-Additionally, Julia offers multiple dispatch capabilities, which allows us to use the same function names for different operations,
+Additionally, julia offers multiple dispatch capabilities, which allows us to use the same function names for different operations,
 depending on the function inputs.
 This enables our package to be more user-friendly, as it really reduces the ammount of function names to be memorized.
 
@@ -114,6 +114,6 @@ $$ \min_{f \geq 0} ||Kf-g||_2^2 + \alpha||f||_2^2  $$
 
 # Acknowledgements
 The authors would like to acknowledge funding from bp-ICAM and the EPSRC grant no. EP/V519613/1. 
-Furthermore, A. Mavridis would like to thank the Julia community for numerous helpful discussions around the topic.
+Furthermore, A. Mavridis would like to thank the julia community for numerous helpful discussions around the topic.
 
 # References

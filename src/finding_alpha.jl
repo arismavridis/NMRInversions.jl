@@ -35,7 +35,7 @@ end
 Solve repeatedly until the GCV score stops decreasing.
 Select the solution with minimum gcv score and return it, along with the residuals.
 """
-function solve_gcv(svds::svd_kernel_struct, solver::Type{<:regularization_solver}, order::Int)
+function solve_gcv(svds::svd_kernel_struct, solver::Union{regularization_solver, Type{<:regularization_solver}})
 
     s̃ = svds.S
     ñ = length(s̃)
@@ -50,7 +50,7 @@ function solve_gcv(svds::svd_kernel_struct, solver::Type{<:regularization_solver
     while ~done
 
         display("Testing α = $(round(αₙ,sigdigits=3))")
-        f, r = solve_regularization(svds.K, svds.g, αₙ, solver, order)
+        f, r = solve_regularization(svds.K, svds.g, αₙ, solver)
 
         push!(α, αₙ) # Add the just tested α to the array
         φₙ, αₙ = gcv_score(αₙ, r, svds.S, (svds.V' * f)) # Compute φ for current α, and also compute new α 
@@ -103,7 +103,7 @@ end
 """
 
 """
-function solve_l_curve(K, g, lower, upper, n, order)
+function solve_l_curve(K, g, lower, upper, n)
 
     alphas = exp10.(range(log10(lower), log10(upper), n))
     curvatures = zeros(length(alphas))
