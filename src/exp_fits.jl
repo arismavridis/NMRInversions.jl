@@ -25,13 +25,16 @@ function mexp(seq, u, x)
         un = sum([u[i] for i in 1:2:length(u)])
         return un .-  mexp(u,x)
 
-    elseif seq in [CPMG, PFG]
+    elseif seq == CPMG
         return mexp(u, x)
 
+    elseif seq == PFG
+        return mexpd(u, x)
     end
 
 end
 mexp(u, x) = sum([u[i] * exp.(-(1 / u[i+1]) * x) for i in 1:2:length(u)])
+mexpd(u, x) = sum([u[i] * exp.(-(1 * u[i+1]) * x) for i in 1:2:length(u)])
 
 
 "Loss function for multi-exponential fit, returns the sum of squared differences between the data and the model."
@@ -118,13 +121,16 @@ function expfit(u0::Vector, seq::Type{<:NMRInversions.pulse_sequence1D}, x::Vect
     # Determine what's the x-axis of the seq (time or bfactor)
     seq == NMRInversions.PFG ? x_ax = "b" : x_ax = "t"
 
+    # Determine whether there should be a multiplication or a division in the exp() formula 
+    seq == NMRInversions.PFG ?  op = "*" : op = "/"
+
     un = sum([u[i] for i in 1:2:length(u)]) 
 
     # Get the fit's equation as a string
-    eq = join([(i == 1 ? "" : " + ") * string(round(u[i], sigdigits=2)) * " * exp($x_ax/" * string(round(u[i+1], sigdigits=2)) * ")" for i in 1:2:length(u)])
+    eq = join( [(i == 1 ? "" : " + ") * string(round(u[i], sigdigits=2)) * " * exp($x_ax" * op * string(round(u[i+1], sigdigits=2)) * ")" for i in 1:2:length(u)])
 
     # Normalised version of the fit equation
-    eqn = string(round(un, sigdigits=2)) * " * (" * join([(i == 1 ? "" : " + ") * string(round(u[i] / un, sigdigits=2)) * " * exp($x_ax/" * string(round(u[i+1], sigdigits=2)) * ")" for i in 1:2:length(u)]) * ")"
+    eqn = string(round(un, sigdigits=2)) * " * (" * join([(i == 1 ? "" : " + ") * string(round(u[i] / un, sigdigits=2)) * " * exp($x_ax" * op * string(round(u[i+1], sigdigits=2)) * ")" for i in 1:2:length(u)]) * ")"
 
     if seq == IR
         unstr = string(round(un,sigdigits = 2))

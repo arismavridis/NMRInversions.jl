@@ -120,6 +120,8 @@ struct gcv <: smoothing_optimizer end
 """
     lcurve
 L curve method for finding the optimal regularization parameter α.
+
+STILL UNDER DEVELOPMENT!
 """
 struct lcurve <: smoothing_optimizer end
 
@@ -129,7 +131,7 @@ export smoothing_optimizer, gcv, lcurve
 export svd_kernel_struct
 """
     svd_kernel_struct(K,g,U,S,V)
-A structure containing the following elements:
+A structure containing the following fields:
 - `K`, the kernel matrix.
 - `G`, the data vector.
 - `U`, the left singular values matrix.
@@ -152,7 +154,7 @@ end
 export input1D
 """
     input1D(seq, x, y)
-A structure containing the following elements:
+A structure containing the following fields:
 - `seq` is the 1D pulse sequence (e.g. IR, CPMG, PGSE)
 - `x`, the x values of the measurement (e.g time for relaxation or b-factor for diffusion).
 - `y`, the y values of the measurement. 
@@ -170,7 +172,7 @@ export input2D
 """
     input2D(seq, x, y)
 
-A structure containing the following elements:
+A structure containing the following fields:
 - `seq` is the 2D pulse sequence (e.g. IRCPMG)
 - `x_direct` is the direct dimension acquisition parameter (e.g. the times when you aquire CPMG echoes).
 - `x_indirect` is the indirect dimension acquisition parameter (e.g. all the delay times τ in your IR sequence).
@@ -191,7 +193,7 @@ export inv_out_1D
     inv_out_1D(seq, x, y, xfit, yfit, X, f, r, SNR, α, wa)
 
 Output of the invert function for 1D pulse sequences.
-A structure containing the following elements:
+A structure containing the following fields:
 - `seq` is the 1D pulse sequence (e.g. IR, CPMG, PGSE)
 - `x`, the x values of the measurement (e.g time for relaxation or b-factor for diffusion).
 - `y`, the y values of the measurement.
@@ -226,7 +228,7 @@ export inv_out_2D
     inv_out_2D(seq, X_dir, X_indir, F, r, SNR, α, filter, selections)
 
 Output of the invert function for 2D pulse sequences.
-A structure containing the following elements:
+A structure containing the following fields:
 - `seq` is the 2D pulse sequence (e.g. IRCPMG)
 - `X_dir`, the x values of the direct dimension.
 - `X_indir`, the x values of the indirect dimension.

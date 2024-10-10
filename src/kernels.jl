@@ -12,8 +12,12 @@ The output is a matrix, `K`.
 function create_kernel(seq::Type{<:pulse_sequence1D}, x::Vector, X::Vector)
     if seq == IR
         kernel_eq = (t, T) -> 1 - 2 * exp(-t / T)
-    elseif seq in [CPMG, PFG]
+    elseif seq == SR
+        kernel_eq = (t, T) -> 1 - exp(-t / T)
+    elseif seq == CPMG
         kernel_eq = (t, T) -> exp(-t / T)
+    elseif seq == PFG
+        kernel_eq = (b, D) -> exp(-b * D)
     end
 
     return kernel_eq.(x, X')
@@ -27,13 +31,8 @@ If data vector is complex, the SNR is calculated and the SVD is automatically tr
 to remove the "noisy" singular values.
 """
 function create_kernel(seq::Type{<:pulse_sequence1D}, x::Vector, X::Vector, g::Vector{<:Real})
-    if seq == IR
-        kernel_eq = (t, T) -> 1 - 2 * exp(-t / T)
-    elseif seq in [CPMG, PFG]
-        kernel_eq = (t, T) -> exp(-t / T)
-    end
 
-    usv = svd(kernel_eq.(x, X'))
+    usv = svd(create_kernel.(seq, x , X))
 
     K_new = Diagonal(usv.S) * usv.V'
     g_new = usv.U' * g
@@ -43,14 +42,10 @@ function create_kernel(seq::Type{<:pulse_sequence1D}, x::Vector, X::Vector, g::V
 end
 
 function create_kernel(seq::Type{<:pulse_sequence1D}, x::Vector, X::Vector, g::Vector{<:Complex})
-    if seq == IR
-        kernel_eq = (t, T) -> 1 - 2 * exp(-t / T)
-    elseif seq in [CPMG, PFG]
-        kernel_eq = (t, T) -> exp(-t / T)
-    end
+
+    usv = svd(create_kernel.(seq, x , X))
 
     SNR = calc_snr(g)
-    usv = svd(kernel_eq.(x, X'))
     indices = findall(i -> i .> (1 / SNR), usv.S) # find elements in S12 above the noise threshold
 
     display("SVD truncated to $(length(indices)) singular values out of $(length(usv.S))")
@@ -96,6 +91,8 @@ function create_kernel(seq::Type{<:pulse_sequence2D},
     if seq == IRCPMG
         K_dir = create_kernel(CPMG, x_direct, X_direct)
         K_indir = create_kernel(IR, x_indirect, X_indirect)
+    else
+        error("2D inversion not yet implemented for $(seq)")
     end
 
     ## Perform SVD truncation
