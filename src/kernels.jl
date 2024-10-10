@@ -32,7 +32,7 @@ to remove the "noisy" singular values.
 """
 function create_kernel(seq::Type{<:pulse_sequence1D}, x::Vector, X::Vector, g::Vector{<:Real})
 
-    usv = svd(create_kernel.(seq, x , X))
+    usv = svd(create_kernel(seq, x , X))
 
     K_new = Diagonal(usv.S) * usv.V'
     g_new = usv.U' * g
@@ -43,7 +43,7 @@ end
 
 function create_kernel(seq::Type{<:pulse_sequence1D}, x::Vector, X::Vector, g::Vector{<:Complex})
 
-    usv = svd(create_kernel.(seq, x , X))
+    usv = svd(create_kernel(seq, x , X))
 
     SNR = calc_snr(g)
     indices = findall(i -> i .> (1 / SNR), usv.S) # find elements in S12 above the noise threshold

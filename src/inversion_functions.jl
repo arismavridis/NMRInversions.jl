@@ -13,15 +13,16 @@ The output is an `inv_out_1D` structure.
  Optional (keyword) arguments:
 - `lims=(a,b,c)` will set the "limits" of the output X, 
 so that it starts from 10^a, ends in 10^b and consists of c 
-logarithmically spaced values (default is (-5, 1, 128)). 
-Alternatiively, a vector of values can be used directly 
-(e.g. `lims=[10^-5, ... ,10]` ).
+logarithmically spaced values 
+(default is (-5, 1, 128) for relaxation and (-10, -7, 128) for diffusion). 
+Alternatiively, a vector of values can be used directly, if more freedom is needed 
+(e.g. `lims=exp10.(range(-5, 1, 128))`).
 - `alpha` determines the smoothing term. Use a real number for a fixed alpha.  No selection will lead to automatically determining alpha through the defeault method, which is `gcv`.
 - `solver` is the algorithm used to do the inversion math. Default is `brd`.
 
 """
 function invert(seq::Type{<:pulse_sequence1D}, x::AbstractArray, y::Vector;
-    lims::Union{Tuple{Real, Real, Int}, AbstractVector}=(-5, 1, 128), 
+    lims::Union{Tuple{Real, Real, Int}, AbstractVector, Type{<:pulse_sequence1D}}=seq, 
     alpha::Union{Real, smoothing_optimizer, Type{<:smoothing_optimizer}}=gcv, 
     solver::Union{regularization_solver, Type{<:regularization_solver}}=brd)
 
@@ -29,6 +30,12 @@ function invert(seq::Type{<:pulse_sequence1D}, x::AbstractArray, y::Vector;
         X = exp10.(range(lims...))
     elseif isa(lims, AbstractVector)
         X = lims
+    elseif isa(lims, Type{<:pulse_sequence1D})
+        if lims == PFG
+            X = exp10.(range(-10, -7, 128))
+        else
+            X = exp10.(range(-5, 1, 128))
+        end
     end
 
     α = 1 #placeholder, will be replaced below 
@@ -92,8 +99,8 @@ The output is an `inv_out_2D` structure.
 
 
  Optional (keyword) arguments:
-- `rdir` determines the output "range" of the inversion in the direct dimension (e.g. T₂ times in IRCPMG)
-- `rindir` determines the output "range" of the inversion in the indirect dimension (e.g. T₁ times in IRCPMG)
+- `lims1` determines the output "range" of the inversion in the direct dimension (e.g. T₂ times in IRCPMG)
+- `lims2` determines the output "range" of the inversion in the indirect dimension (e.g. T₁ times in IRCPMG)
  In both cases above, you can use a tuple specifying the limits of the range, or a vector of values, same as the `lims` argument in the 1D inversion.
 
 - `alpha` determines the smoothing term. Use a real number for a fixed alpha.  No selection will lead to automatically determining alpha through the defeault method, which is `gcv`.
@@ -102,27 +109,27 @@ The output is an `inv_out_2D` structure.
 """
 function invert(
     seq::Type{<:pulse_sequence2D}, x_direct::AbstractVector, x_indirect::AbstractVector, Data::AbstractMatrix;
-    rdir::Union{Tuple{Real, Real, Int}, AbstractVector}=(-5, 1, 100), 
-    rindir::Union{Tuple{Real, Real, Int}, AbstractVector}=(-5, 1, 100),
+    lims1::Union{Tuple{Real, Real, Int}, AbstractVector}=(-5, 1, 100), 
+    lims2::Union{Tuple{Real, Real, Int}, AbstractVector}=(-5, 1, 100),
     alpha::Union{Real, smoothing_optimizer, Type{<:smoothing_optimizer}}=gcv, 
     solver::Union{regularization_solver, Type{<:regularization_solver}}=brd)
 
-    if isa(rdir, Tuple)
-        X_direct = exp10.(range(rdir...))
-    elseif isa(rdir, AbstractVector)
-        X_direct = lims
+    if isa(lims1, Tuple)
+        X_direct = exp10.(range(lims1...))
+    elseif isa(lims1, AbstractVector)
+        X_direct = lims1
     end
 
-    if isa(rindir, Tuple)
-        X_indirect = exp10.(range(rindir...))
-    elseif isa(rindir, AbstractVector)
-        X_indirect = lims
+    if isa(lims2, Tuple)
+        X_indirect = exp10.(range(lims2...))
+    elseif isa(lims2, AbstractVector)
+        X_indirect = lims2
     end
 
 
     ker_struct = create_kernel(seq, x_direct, x_indirect, X_direct, X_indirect, Data)
 
-    α = 1 #placeholder, will be replaced below
+    α = 1.0 #placeholder, will be replaced below
 
     if isa(alpha, Real)
         α = alpha

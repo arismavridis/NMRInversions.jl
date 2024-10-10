@@ -127,10 +127,10 @@ function expfit(u0::Vector, seq::Type{<:NMRInversions.pulse_sequence1D}, x::Vect
     un = sum([u[i] for i in 1:2:length(u)]) 
 
     # Get the fit's equation as a string
-    eq = join( [(i == 1 ? "" : " + ") * string(round(u[i], sigdigits=2)) * " * exp($x_ax" * op * string(round(u[i+1], sigdigits=2)) * ")" for i in 1:2:length(u)])
+    eq = join( [(i == 1 ? "" : " + ") * string(round(u[i], sigdigits=2)) * " * exp("-" * $x_ax" * op * string(round(u[i+1], sigdigits=2)) * ")" for i in 1:2:length(u)])
 
     # Normalised version of the fit equation
-    eqn = string(round(un, sigdigits=2)) * " * (" * join([(i == 1 ? "" : " + ") * string(round(u[i] / un, sigdigits=2)) * " * exp($x_ax" * op * string(round(u[i+1], sigdigits=2)) * ")" for i in 1:2:length(u)]) * ")"
+    eqn = string(round(un, sigdigits=2)) * " * (" * join([(i == 1 ? "" : " + ") * string(round(u[i] / un, sigdigits=2)) * " * exp("-" * $x_ax" * op * string(round(u[i+1], sigdigits=2)) * ")" for i in 1:2:length(u)]) * ")"
 
     if seq == IR
         unstr = string(round(un,sigdigits = 2))
