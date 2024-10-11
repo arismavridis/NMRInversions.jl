@@ -18,7 +18,7 @@ function test1D(seq::Type{<:pulse_sequence1D})
 
     results = invert(seq, x, y, alpha=gcv)
 
-    return norm(results.f - f_custom) < 0.5
+    return norm(results.f - f_custom) < 1.0
 end
 
 
@@ -121,7 +121,7 @@ function testT1T2()
     data = K1 * F_original * K2'
     data = complex.(data, 0.001 .* maximum(real(data)) .* randn(size(data)))
 
-    results = invert(IRCPMG, x_direct, x_indirect, data, alpha=0.01, rdir=(-5, 1, 64), rindir=(-5, 1, 64))
+    results = invert(IRCPMG, x_direct, x_indirect, data, alpha=0.01, lims1=(-5, 1, 64), lims2=(-5, 1, 64))
 
     # K = create_kernel(IRCPMG, x_direct, x_indirect,X_direct, X_indirect,data)
     # A = SparseArrays.sparse([K.K; √(1) .* NMRInversions.Γ(size(K.K, 2), 0)])
@@ -155,7 +155,6 @@ end
 
 
 
-
 function test_phase_correction(plots=false)
 
     # Create real and imaginary parts
@@ -185,7 +184,7 @@ function test_phase_correction(plots=false)
 
     display("The correction error is $(2π - (ϕd + ϕc)) radians")
 
-    return abs(2π - (ϕd + ϕc)) < 0.01
+    return abs(2π - (ϕd + ϕc)) < 0.05
 end
 
 

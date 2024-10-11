@@ -5,9 +5,14 @@ Import data from a CSV file.
 The function reads the file and returns an `input1D` structure.
 - `seq` is the 1D pulse sequence (e.g. IR, CPMG, PGSE)
 - `file` is the path to the CSV file which contains the data (x, y) in two respective columns.
-\
-The function can be called without the seq argument, and the output will be the x and y vectors( `x,y =import_csv()`).
-Alternatively, the function can also be called with only the seq argument, in which case a file dialog will open to select the file.
+
+
+The function can be called without the seq argument,
+and the output will be the x and y vectors 
+(use it like, `x,y =import_csv()`).
+Alternatively, the function can also be called with only the seq argument,
+in which case a file dialog will open to select the file
+(use it like, `data = import_csv(IR)`)
 """
 function import_csv(seq::Type{<:pulse_sequence1D}, file=pick_file(pwd()))
     x, y = import_csv(file)
@@ -38,7 +43,7 @@ export import_spinsolve
     import_spinsolve(files)
 Import data from a Spinsolve experiment. 
 Two paths must be provided as follows (order is not important):
-- `files` = [.../datafile.csv , .../acqu.par.bak] 
+- `files` = [.../datafile.csv , .../acqu.par] 
 \
 Calling this function without an argument by typing `import_spinsolve()` will open a file dialog to select the files.
 The function reads the acqu.par.bak file to get the acquisition parameters, and the .dat file to get the data. 
@@ -106,9 +111,27 @@ function import_spinsolve(files=pick_multi_file(pwd()))
 
     end
 
-
 end
 
+
+# Import bruker function
+    # read BYTORDA in aqcus and DTYPA from the the the files
+    # read the binary
+#=A 2-dimensional experiment generates a ser file contains TD(F1) series of FIDs, which is the=#
+#=parameter TD in the file acqu2s. Each FID in a ser file start at a 1024 byte block boundary,=#
+#=even if its size is not a multiple of 1024 bytes.=#
+#=function import_bruker(dir::String=pick_folder(pwd()))=#
+#==#
+#=    # read BYTORDA in aqcus and DTYPA from the the the files=#
+#=    BYTORDA::Int = 0=#
+#=    DTYPA::Int = 0=#
+#=    open(dir * "/acqus") do io=#
+#=        readuntil(io, "BYTORDA = ")=#
+#=        BYTORDA = parse(Int, readline(io))=#
+#=    end=#
+#==#
+#==#
+#=end=#
 
 
 function writeresults(results::Union{inv_out_1D,inv_out_2D}, dir)
@@ -149,6 +172,9 @@ Import data from a .txt format, as exported by Geospec instruments.
 
 The function reads the relevant information, performs a phase correction on the data,
 and returns an `input1D` or `input2D` structure.
+
+Calling this function without an argument by typing `import_geospec()` 
+will open a file dialog to select the .txt file.
 """
 function import_geospec(filedir::String=pick_file(pwd()))
 

@@ -47,6 +47,33 @@ If a format you're working with is not yet supported,
 please [submit an issue](https://github.com/arismavridis/NMRInversions.jl/issues/new) 
 and we'll work on it.
 
+The most basic use case would be using data saved in a csv format, 
+where there are *only* two columns, 
+one for your x-axis (time for relaxation and b-factor for diffusion)
+and one for your y-axis (signal intensity).
+
+
+```@docs
+import_csv(::Type{<:pulse_sequence1D},::String)
+```
+
+If you're using a spinsolve instrument, you can use the `import_spinsolve` function.
+This one requires two files as an input. 
+The `aqcu.par` is automatically exported by SpinsolveExpert, 
+but you might have to export your data file manually in a csv format.
+
+```@docs
+import_spinsolve(::String)
+```
+
+For geospec instruments, you can export your raw data as a text file.
+That text file can be read by the `import_geospec` function.
+
+```@docs
+import_geospec(::String)
+```
+
+
 # Inversion functions
 The most important function is `invert()`, which is the main function of the package.
 It works as follows:
