@@ -6,7 +6,7 @@ This function will build a kernel and use it to perform an inversion using the a
 The output is an `inv_out_1D` structure.
 
  Necessary (positional) arguments:
-- `seq` is the 1D pulse sequence (e.g. IR, CPMG, PGSE)
+- `seq` is the 1D pulse sequence (e.g. IR, CPMG, PFG)
 - `x` is the experiment x axis (time or b factor etc.)
 - `y` is the experiment y axis (intensity of the NMR signal)
 

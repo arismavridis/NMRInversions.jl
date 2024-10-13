@@ -155,7 +155,7 @@ export input1D
 """
     input1D(seq, x, y)
 A structure containing the following fields:
-- `seq` is the 1D pulse sequence (e.g. IR, CPMG, PGSE)
+- `seq` is the 1D pulse sequence (e.g. IR, CPMG, PFG)
 - `x`, the x values of the measurement (e.g time for relaxation or b-factor for diffusion).
 - `y`, the y values of the measurement. 
 
@@ -194,7 +194,7 @@ export inv_out_1D
 
 Output of the invert function for 1D pulse sequences.
 A structure containing the following fields:
-- `seq` is the 1D pulse sequence (e.g. IR, CPMG, PGSE)
+- `seq` is the 1D pulse sequence (e.g. IR, CPMG, PFG)
 - `x`, the x values of the measurement (e.g time for relaxation or b-factor for diffusion).
 - `y`, the y values of the measurement.
 - `xfit`, the x values of the fitted data.

@@ -72,7 +72,7 @@ end
     expfit(n, data::input1D; kwargs...)
 Similar to the `invert` fucntion, `expfit` can be called using an `input1D` structure.
 """
-function expfit(u0::Vector{Real}, res::NMRInversions.input1D; kwargs...)
+function expfit(u0::Vector{<:Real}, res::NMRInversions.input1D; kwargs...)
     expfit(u0, res.seq, res.x, res.y, kwargs...)
 end
 
@@ -108,7 +108,7 @@ The following examples might help to clarify: \n
 Numbers of parameters beyond tri-exponential can also be used, but it is not recommended.
 
 """
-function expfit(u0::Vector, seq::Type{<:NMRInversions.pulse_sequence1D}, x::Vector, y::Vector;
+function expfit(u0::Vector{<:Real}, seq::Type{<:NMRInversions.pulse_sequence1D}, x::Vector, y::Vector;
      solver=OptimizationOptimJL.BFGS())
 
     u0 = Float64.(u0)
@@ -127,10 +127,10 @@ function expfit(u0::Vector, seq::Type{<:NMRInversions.pulse_sequence1D}, x::Vect
     un = sum([u[i] for i in 1:2:length(u)]) 
 
     # Get the fit's equation as a string
-    eq = join( [(i == 1 ? "" : " + ") * string(round(u[i], sigdigits=2)) * " * exp("-" * $x_ax" * op * string(round(u[i+1], sigdigits=2)) * ")" for i in 1:2:length(u)])
+    eq = join( [(i == 1 ? "" : " + ") * string(round(u[i], sigdigits=2)) * " * exp(-$x_ax" * op * string(round(u[i+1], sigdigits=2)) * ")" for i in 1:2:length(u)])
 
     # Normalised version of the fit equation
-    eqn = string(round(un, sigdigits=2)) * " * (" * join([(i == 1 ? "" : " + ") * string(round(u[i] / un, sigdigits=2)) * " * exp("-" * $x_ax" * op * string(round(u[i+1], sigdigits=2)) * ")" for i in 1:2:length(u)]) * ")"
+    eqn = string(round(un, sigdigits=2)) * " * (" * join([(i == 1 ? "" : " + ") * string(round(u[i] / un, sigdigits=2)) * " * exp(-$x_ax" * op * string(round(u[i+1], sigdigits=2)) * ")" for i in 1:2:length(u)]) * ")"
 
     if seq == IR
         unstr = string(round(un,sigdigits = 2))
