@@ -55,7 +55,7 @@ function Makie.plot!(fig::Union{Makie.Figure,Makie.GridPosition}, res::expfit_st
         ax = Axis(fig[1, 1], xlabel="time (s)", ylabel="Signal (a.u.)")
 
     elseif res[1].seq in [NMRInversions.PFG]
-        ax = Axis(fig[1, 1], xlabel="b factor", ylabel="Signal (a.u.)")
+        ax = Axis(fig[1, 1], xlabel="b factor (s/m² e-9)", ylabel="Signal (a.u.)")
     end
 
     for (i, r) in enumerate(res)
@@ -107,15 +107,15 @@ function Makie.plot!(fig::Union{Makie.Figure,Makie.GridPosition}, res::NMRInvers
 
     # Make axes
     if res[1].seq in [NMRInversions.IR]
-        ax1 = Axis(fig[:, 1], xlabel="time", ylabel="Signal")
-        ax2 = Axis(fig[:, 2], xlabel="T₁", xscale=log10)
+        ax1 = Axis(fig[:, 1], xlabel="time (s)", ylabel="Signal (a.u.)")
+        ax2 = Axis(fig[:, 2], xlabel="T₁ (s)", xscale=log10)
 
     elseif res[1].seq in [NMRInversions.CPMG]
-        ax1 = Axis(fig[:, 1], xlabel="time", ylabel="Signal")
-        ax2 = Axis(fig[:, 2], xlabel="T₂", xscale=log10)
+        ax1 = Axis(fig[:, 1], xlabel="time (s)", ylabel="Signal (a.u.)")
+        ax2 = Axis(fig[:, 2], xlabel="T₂ (s)", xscale=log10)
 
     elseif res[1].seq in [NMRInversions.PFG]
-        ax1 = Axis(fig[:, 1], xlabel="b factor", ylabel="Signal")
+        ax1 = Axis(fig[:, 1], xlabel="b factor (s/m² e-9)", ylabel="Signal (a.u.)")
         ax2 = Axis(fig[:, 2], xlabel="D (m²/s)", xscale=log10)
     end
 

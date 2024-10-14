@@ -187,12 +187,23 @@ function test_phase_correction(plots=false)
     return abs(2π - (ϕd + ϕc)) < 0.05
 end
 
+function test_expfit()
+
+    x = [range(0.001, 3, 32)...]
+    u = [3.0, 0.2 ,4.0 ,0.05]
+    y = mexp(CPMG, u, x) + 0.01 .* randn(length(x))
+    data = input1D(CPMG, x, y)
+    results = expfit(2,data)
+
+    return sum((sort(u) .- sort(results.u)) .^ 2) < 0.5
+end
 
 
 @testset "NMRInversions.jl" begin
     # Write your tests here.
     @test test1D(IR)
     @test testT1T2()
+    @test test_expfit()
     @test test_phase_correction()
 
 end

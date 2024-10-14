@@ -61,10 +61,22 @@ Arguments:
 - `x` : acquisition x parameter (time for relaxation or b-factor for diffusion).
 - `y` : acquisition y parameter (magnetization).
 - `solver` : optimization solver (default is BFGS).
+
+
+Note that initial conditions are automatically determined. 
+If you get NaN for any of the resulting parameters, 
+try changing the initial conditions by calling the funtion using
+the `u0` argument instead of `n`.
 """
 function expfit(n::Int, seq::Type{<:NMRInversions.pulse_sequence1D}, x::Vector, y::Vector; kwargs...)
-    u0 = (ones(2 * n))
-    u0[2:2:end] .= [10.0^(1-x)  for x in 1:n]
+
+    # Make an educated guess of u0
+    if seq == PFG
+        u0 = [v for l in 1:n for v in ( abs(y[1])/(3*l -2) ,maximum(x)/100 * 10.0^(-(l/2 -0.5)) ) ]
+    else 
+        u0 = [v for l in 1:n for v in ( abs(y[1])/(3*l -2) ,maximum(x)/5 * 10.0^(-(l/2)) ) ]
+    end
+
     return expfit(u0, seq, x, y; kwargs...)
 end
 

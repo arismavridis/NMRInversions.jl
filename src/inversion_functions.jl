@@ -32,12 +32,18 @@ function invert(seq::Type{<:pulse_sequence1D}, x::AbstractArray, y::Vector;
         X = lims
     elseif isa(lims, Type{<:pulse_sequence1D})
         if lims == PFG
-            X = exp10.(range(-10, -7, 128))
+            X = exp10.(range(-11, -8, 128))
         else
             X = exp10.(range(-5, 1, 128))
         end
     end
 
+
+    # Change scale to match bfactor, which is s/m²e-9, undo below to go back to SI
+    if seq == PFG
+        X .= X .* 1e9
+    end
+ 
     α = 1 #placeholder, will be replaced below 
 
     if isa(alpha, Real)
@@ -61,6 +67,11 @@ function invert(seq::Type{<:pulse_sequence1D}, x::AbstractArray, y::Vector;
     y_fit = create_kernel(seq, x_fit, X) * f
 
     isreal(y) ? SNR = NaN : SNR = calc_snr(y)
+
+
+    if seq == PFG
+        X .= X ./ 1e9
+    end
 
     weighted_average =  f'X / sum(f)
 
