@@ -310,7 +310,7 @@ function Makie.plot(res::NMRInversions.inv_out_2D)
     clearb = Button(gui[2, 10:15]; label="Clear current selection")
     resetb = Button(gui[1, 15:19]; label="Reset everything")
     filterb = Button(gui[2, 15:19]; label="Filter-out unselected")
-    saveb = Button(gui[3, 15:19]; label="Save plot (WIP)")
+    saveb = Button(gui[3, 10:19]; label="Save and exit")
 
     # Title textbox
     tb = Textbox(gui[1, 2:7], placeholder="Insert a title for the plot, then press enter.", width=300, reset_on_defocus=true)
@@ -425,7 +425,14 @@ function Makie.plot(res::NMRInversions.inv_out_2D)
                 ttl = tb.stored_string[]
             end
 
-            f = plot(res, title=ttl)
+            f = plot(res, ttl)
+            savedir = NMRInversions.save_file(ttl, filterlist = "png")
+
+            if savedir == ""
+                display("Please enter a name for your file on the file dialog.")
+            else
+                save(savedir, f)
+            end
 
         end
 

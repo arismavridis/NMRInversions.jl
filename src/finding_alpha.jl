@@ -79,26 +79,30 @@ function solve_gcv(svds::svd_kernel_struct, solver::Union{regularization_solver,
     return f, r, α
 end
 
+
+
 """
 Compute the curvature of the L-curve at a given point.
+(Hansen 2010 page 92-93)
 
 - `f` : solution vector
 - `r` : residuals
 - `α` : smoothing term
 - `A` : Augmented kernel matrix (`K` and `αI` stacked vertically)
+- `b` : Augmented residuals (`r` and `0` stacked vertically)
 
 """
-function l_curvature(f, r, α, A)
+function l_curvature(f, r, α, A, b)
 
     ξ = f'f
     ρ = r'r
     λ = √α
 
-    z = solve_nnls(A, r)
+    z = NMRInversions.solve_ls(A, b)
 
-    ∂ξ∂λ = 4 / λ * f'z
+    ∂ξ∂λ = (4 / λ) * f'z
 
-    ĉ = (2ξ * ρ / ∂ξ∂λ) * (α * ∂ξ∂λ * ρ + 2 * ξ * λ * ρ + λ^4 * ξ * ∂ξ∂λ) / (α * ξ^2 + ρ^2)^(3 / 2)
+    ĉ = 2 * (ξ * ρ / ∂ξ∂λ) * (α * ∂ξ∂λ * ρ + 2 * ξ * λ * ρ + λ^4 * ξ * ∂ξ∂λ) / ((α * ξ^2 + ρ^2)^(3 / 2))
 
     return ĉ
 
@@ -108,45 +112,29 @@ end
 """
 
 """
-function solve_l_curve(K, g, lower, upper, n)
+function solve_l_curve(K, g, solver, lower, upper, n)
 
     alphas = exp10.(range(log10(lower), log10(upper), n))
     curvatures = zeros(length(alphas))
 
-    ξarray = zeros(length(alphas))
-    ρarray = zeros(length(alphas))
-
     for (i, α) in enumerate(alphas)
-        A = sparse([K; √(α) .* NMRInversions.Γ(size(K, 2), order)])
+        display("Testing α = $(round(α,sigdigits=3))")
 
-        f = vec(nonneg_lsq(A, [y; zeros(size(A, 1) - size(y, 1))], alg=:nnls))
-        r = K * f - y
+        f, r = NMRInversions.solve_regularization(K, g, α, solver)
 
-        ξ = f'f
-        ρ = r'r
+        A = sparse([K; √(α) * LinearAlgebra.I ])
+        b = sparse([r; zeros(size(A, 1) - size(r, 1))])
 
-        λ = √α
+        c = l_curvature(f, r, α, A, b)
 
-        ξarray[i] = ξ
-        ρarray[i] = ρ
-
-        z = vec(nonneg_lsq(A, [r; zeros(size(A, 1) - size(r, 1))], alg=:nnls))
-
-        ∂ξ∂λ = (4 / λ) * f'z
-
-        ĉ = (2ξ * ρ / ∂ξ∂λ) * (α * ∂ξ∂λ * ρ + 2 * ξ * λ * ρ + λ^4 * ξ * ∂ξ∂λ) / (α * ξ^2 + ρ^2)^(3 / 2)
-
-        curvatures[i] = ĉ
+        curvatures[i] = c
 
     end
-    # plot(ρarray, ξarray, xscale=:log10, yscale=:log10)
 
-    non_inf_indx = findall(!isinf, curvatures)
-    argmax(curvatures[non_inf_indx])
-    α = alphas[non_inf_indx][argmax(curvatures[non_inf_indx])]
-    A = sparse([K; √(α) .* NMRInversions.Γ(size(K, 2), order)])
-    f = vec(nonneg_lsq(A, [y; zeros(size(A, 1) - size(y, 1))], alg=:nnls))
-    r = K * f - y
+    α = alphas[argmin(curvatures)]
+    display("The optimal α is $(round(α,sigdigits=3))")
+
+    f, r = NMRInversions.solve_regularization(K, g, α, solver)
 
     return f, r, α
 

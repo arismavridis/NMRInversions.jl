@@ -1,4 +1,6 @@
 using NMRInversions
+#=using Plots=#
+using SparseArrays
 using LinearAlgebra
 using Test
 using Optimization, OptimizationOptimJL
@@ -22,52 +24,43 @@ function test1D(seq::Type{<:pulse_sequence1D})
 end
 
 
+
+
 function test_lcurve()
-    # @time begin
 
     # x = exp10.(range(log10(1e-4), log10(5), 32)) # acquisition range
-    x = collect(range(0.01, 2, 32))
+    x = collect(range(0.01, 1, 32))
     X = exp10.(range(-5, 1, 128)) # T range
     # K = create_kernel(IR, x, X)
     K = create_kernel(CPMG, x, X)
     f_custom = [0.5exp.(-(x)^2 / 3) + exp.(-(x - 1.3)^2 / 0.5) for x in range(-5, 5, length(X))]
-
     g = K * f_custom
     noise_level = 0.001 * maximum(g)
     y = g + noise_level .* randn(length(x))
 
-    alphas = exp10.(range(log10(1e-5), log10(1), 128))
+    #=data = input1D(CPMG, x, y)=#
+    #=plot(invert(data,alpha=lcurve(1e-5,1,64)))=#
+
+    alphas = exp10.(range(log10(1e-5), log10(1e-1), 128))
     curvatures = zeros(length(alphas))
     xis = zeros(length(alphas))
     rhos = zeros(length(alphas))
-    order = 0
-
-    U, s, V = svd(K)
-    s_keep_ind = findall(x -> x > noise_level, s)
-    U = U[:, s_keep_ind]
-    s = s[s_keep_ind]
-    V = V[:, s_keep_ind]
-    K = U * Diagonal(s) * V'
 
     for (i, α) in enumerate(alphas)
-        A = sparse([K; √(α) .* NMRInversions.Γ(size(K, 2), order)])
-        println(α)
+        println("α = ", α)
 
-        # f = vec(nonneg_lsq(A, [y; zeros(size(A, 1) - size(y, 1))], alg=:nnls))
-        # r = K * f - y
-        f, r = NMRInversions.solve_regularization(K, y, α, brd, 0)
+        f, r = NMRInversions.solve_regularization(K, y, α, brd)
 
         ξ = f'f
         ρ = r'r
         λ = √α
 
-        # z = vec(nonneg_lsq(A, [r; zeros(size(A, 1) - size(r, 1))], alg=:nnls))
-        f, _ = NMRInversions.solve_regularization(K, r, α, brd, 0)
+        A = sparse([K; √(α) * LinearAlgebra.I ])
+        b = sparse([r; zeros(size(A, 1) - size(r, 1))])
 
-        fᵢ = s .^ 2 ./ (s .^ 2 .+ α)
-        βᵢ = U' * y
-        ∂ξ∂λ = -(4 / λ) * sum((1 .- fᵢ) .* fᵢ .^ 2 .* (βᵢ .^ 2 ./ s .^ 2))
-        # ∂ξ∂λ = (4 / λ) * f'z
+        z = NMRInversions.solve_ls(A, b)
+
+        ∂ξ∂λ = (4 / λ) * f'z
 
         ĉ = 2 * (ξ * ρ / ∂ξ∂λ) * (α * ∂ξ∂λ * ρ + 2 * ξ * λ * ρ + λ^4 * ξ * ∂ξ∂λ) / ((α * ξ^2 + ρ^2)^(3 / 2))
 
@@ -77,25 +70,22 @@ function test_lcurve()
 
     end
 
-    non_inf_indx = findall(!isinf, curvatures)
+    α = alphas[argmin(curvatures)]
 
-    α = alphas[non_inf_indx][argmax(curvatures[non_inf_indx])]
+    f, r = NMRInversions.solve_regularization(K, y, α, brd)
 
-    A = sparse([K; √(α) .* NMRInversions.Γ(size(K, 2), order)])
-    f, r = NMRInversions.solve_regularization(K, y, α, brd, 0)
-    # f = vec(nonneg_lsq(A, [y; zeros(size(A, 1) - size(y, 1))], alg=:nnls))
-
-    p1 = plot(alphas, curvatures, xscale=:log10)
-    p1 = vline!(p1, [α], label="α = $α")
-    p2 = plot(X, [f_custom, f], label=["original" "solution"], xscale=:log10)
-    p3 = scatter(rhos, xis, xscale=:log10, yscale=:log10)
-    p3 = scatter!([rhos[argmax(curvatures[non_inf_indx])]], [xis[argmax(curvatures[non_inf_indx])]], label="α = $α")
-    p4 = scatter(x, y, label="data")
-    p4 = plot!(x, K * f, label="solution")
-    plot(p1, p2, p3, p4)
+    begin
+        p1 = plot(alphas, curvatures, xscale=:log10, xlabel="α", ylabel="curvature",label = "curvature vs. α");
+        p1 = vline!(p1, [α], label="α = $α");
+        p2 = plot(X, [f_custom, f], label=["original" "solution"], xscale=:log10);
+        p3 = plot(rhos, xis, xscale=:log10, yscale=:log10,label = "lcurve");
+        p3 = scatter!([rhos[argmin(curvatures)]], [xis[argmin(curvatures)]], label="α = $α");
+        p4 = scatter(x, y, label="data");
+        p4 = plot!(x, K * f, label="solution");
+        plot(p1, p2, p3, p4)
+    end
 
 end
-
 
 function testT1T2()
 

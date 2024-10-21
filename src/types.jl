@@ -84,7 +84,10 @@ Simple non-negative least squares method for tikhonov (L2) regularization,
 implemented using OptimizationOptimJl.
 All around effective, but can be slow for large problems, such as 2D inversions.
 It can be used as a "solver" for invert function.
-Order determines the tikhonov matrix. If 0 is chosen, the identity matrix is used.
+Order is an integer that determines the tikhonov matrix 
+(for more info look Hansen's 2010 book on inverse problems). 
+Order `n` means that the penalty term will be the n'th derivative
+of the results. 
 """
 struct optim_nnls <: regularization_solver 
     order::Int
@@ -118,12 +121,26 @@ struct gcv <: smoothing_optimizer end
 
 
 """
-    lcurve
-L curve method for finding the optimal regularization parameter α.
+    lcurve(a,b,n)
+L-curve method for finding the optimal regularization parameter α.
+It will test a set of logarithmically-spaced values, 
+starting from `a`, ending in `b`, and consisting of `n` values.
+The optimal value will be chosen based on the maximum curvature of the L curve,
+as described in Hansen 2010, "Discrete Inverse Problems".
 
-STILL UNDER DEVELOPMENT!
+This is usually less reliable than the `gcv` method, 
+but it's nice to have multiple options.
+
+Note that the first time you use this in every session, 
+it will take about a minute to compile the code.
+This might be optimized in the future, if there's demand for it.
+
 """
-struct lcurve <: smoothing_optimizer end
+struct lcurve <: smoothing_optimizer 
+    lowest_value::Real
+    highest_value::Real
+    number_of_steps::Int
+end
 
 export smoothing_optimizer, gcv, lcurve
 

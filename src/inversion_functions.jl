@@ -44,22 +44,25 @@ function invert(seq::Type{<:pulse_sequence1D}, x::AbstractArray, y::Vector;
         X .= X .* 1e9
     end
  
-    α = 1 #placeholder, will be replaced below 
+    ker_struct = create_kernel(seq, x, X, y)
+    α = 1.0 #placeholder, will be replaced below 
 
     if isa(alpha, Real)
 
         α = alpha
-        ker_struct = create_kernel(seq, x, X, y)
 
         f, r = solve_regularization(ker_struct.K, ker_struct.g, α, solver)
 
     elseif alpha == gcv
 
-        ker_struct = create_kernel(seq, x, X, y)
         f, r, α = solve_gcv(ker_struct, solver)
 
+    elseif isa(alpha, lcurve)
+        f, r, α = solve_l_curve(ker_struct.K, ker_struct.g, solver, 
+                                 alpha.lowest_value, alpha.highest_value, alpha.number_of_steps)
+
     else
-        error("alpha must be a real number or gcv")
+        error("alpha must be a real number or a smoothing_optimizer type.")
 
     end
 
@@ -149,8 +152,12 @@ function invert(
     elseif alpha == gcv
         f, r, α = solve_gcv(ker_struct, solver)
 
+    elseif isa(alpha, lcurve)
+        f, r, α = solve_l_curve(ker_struct.K, ker_struct.g, solver, 
+                                alpha.lowest_value, alpha.highest_value, alpha.number_of_steps)
+
     else
-        error("alpha must be a real number or gcv")
+        error("alpha must be a real number or a smoothing_optimizer type.")
 
     end
 
