@@ -48,8 +48,9 @@ function solve_gcv(svds::svd_kernel_struct, solver::Union{regularization_solver,
     count = 0
 
     done = false
-    while ~done && count <= 20
 
+
+    while ~done && count <= 15
         count += 1
         display("Testing α = $(round(αₙ,sigdigits=3))")
         f, r = solve_regularization(svds.K, svds.g, αₙ, solver)
@@ -61,11 +62,11 @@ function solve_gcv(svds::svd_kernel_struct, solver::Union{regularization_solver,
         if length(φ) > 1 && φ[end] < φ[end-1]
             f_star = deepcopy(f)
 
-        elseif length(φ) > 1 && φ[end] >= φ[end-1]
+        elseif length(φ) > 1 && (abs(α[end] - α[end-1]) > 1e-4) && φ[end] >= φ[end-1] 
             done = true
 
             display("The optimal α is $(round(α[end-1],digits=3))")
-            if count == 20
+            if count == 15
                 @warn("Reached maximum iterations looking for alpha, results might be inaccurate")
             end
         end

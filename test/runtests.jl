@@ -1,8 +1,7 @@
+using Test
 using NMRInversions
-#=using Plots=#
 using SparseArrays
 using LinearAlgebra
-using Test
 using Optimization, OptimizationOptimJL
 
 
@@ -18,28 +17,22 @@ function test1D(seq::Type{<:pulse_sequence1D})
     g = K * f_custom
     y = g + 0.001 * maximum(g) .* randn(length(x))
 
-    results = invert(seq, x, y, alpha=gcv)
+    results = invert(seq, x, y, alpha=gcv, lims=(-5, 1, 128))
 
     return norm(results.f - f_custom) < 1.0
 end
 
 
 
-
 function test_lcurve()
 
-    # x = exp10.(range(log10(1e-4), log10(5), 32)) # acquisition range
     x = collect(range(0.01, 1, 32))
     X = exp10.(range(-5, 1, 128)) # T range
-    # K = create_kernel(IR, x, X)
     K = create_kernel(CPMG, x, X)
     f_custom = [0.5exp.(-(x)^2 / 3) + exp.(-(x - 1.3)^2 / 0.5) for x in range(-5, 5, length(X))]
     g = K * f_custom
     noise_level = 0.001 * maximum(g)
     y = g + noise_level .* randn(length(x))
-
-    #=data = input1D(CPMG, x, y)=#
-    #=plot(invert(data,alpha=lcurve(1e-5,1,64)))=#
 
     alphas = exp10.(range(log10(1e-5), log10(1e-1), 128))
     curvatures = zeros(length(alphas))
@@ -74,16 +67,17 @@ function test_lcurve()
 
     f, r = NMRInversions.solve_regularization(K, y, α, brd)
 
-    begin
-        p1 = plot(alphas, curvatures, xscale=:log10, xlabel="α", ylabel="curvature",label = "curvature vs. α");
-        p1 = vline!(p1, [α], label="α = $α");
-        p2 = plot(X, [f_custom, f], label=["original" "solution"], xscale=:log10);
-        p3 = plot(rhos, xis, xscale=:log10, yscale=:log10,label = "lcurve");
-        p3 = scatter!([rhos[argmin(curvatures)]], [xis[argmin(curvatures)]], label="α = $α");
-        p4 = scatter(x, y, label="data");
-        p4 = plot!(x, K * f, label="solution");
-        plot(p1, p2, p3, p4)
-    end
+    #=using Plots=#
+    #=begin=#
+    #=    p1 = plot(alphas, curvatures, xscale=:log10, xlabel="α", ylabel="curvature",label = "curvature vs. α");=#
+    #=    p1 = vline!(p1, [α], label="α = $α");=#
+    #=    p2 = plot(X, [f_custom, f], label=["original" "solution"], xscale=:log10);=#
+    #=    p3 = plot(rhos, xis, xscale=:log10, yscale=:log10,label = "lcurve");=#
+    #=    p3 = scatter!([rhos[argmin(curvatures)]], [xis[argmin(curvatures)]], label="α = $α");=#
+    #=    p4 = scatter(x, y, label="data");=#
+    #=    p4 = plot!(x, K * f, label="solution");=#
+    #=    plot(p1, p2, p3, p4)=#
+    #=end=#
 
 end
 
@@ -95,6 +89,7 @@ function testT1T2()
     X_direct = exp10.(range(-5, 1, 64)) # T range
     X_indirect = exp10.(range(-5, 1, 64)) # T range
 
+    # Create a rotated gaussian distribution (which would look like real data)
     θ = 135
     σ₁ = 1.3
     σ₂ = 0.4
@@ -113,34 +108,8 @@ function testT1T2()
 
     results = invert(IRCPMG, x_direct, x_indirect, data, alpha=0.01, lims1=(-5, 1, 64), lims2=(-5, 1, 64))
 
-    # K = create_kernel(IRCPMG, x_direct, x_indirect,X_direct, X_indirect,data)
-    # A = SparseArrays.sparse([K.K; √(1) .* NMRInversions.Γ(size(K.K, 2), 0)])
-    # b = vec([K.g;zeros(size(A, 1) - size(K.g, 1))])
-    # f = vec(nonneg_lsq(A, b, alg=:nnls))
-
     return LinearAlgebra.norm(results.F - F_original) < 0.5
 
-end
-
-
-
-function julia_logo_data()
-
-    x = range(1, 10, 50)
-    y = copy(x)
-    C1 = [5.15, 4.2]
-    C2 = [7, 6.4]
-    C3 = C1 + [cosd(-60) -sind(-60); sind(-60) cosd(-60)] * (C2 - C1)
-    C = [C1, C2, C3]
-
-    data = []
-
-    for i in 1:3 
-        A = [exp.((-((x - C[i][1])^2 + (y - C[i][2])^2)) / 1.75) / 100 for x in x, y in y]
-        push!(data, A)
-    end
-
-    return sum(data)
 end
 
 
@@ -176,6 +145,7 @@ function test_phase_correction(plots=false)
 
     return abs(2π - (ϕd + ϕc)) < 0.05
 end
+
 
 function test_expfit()
 

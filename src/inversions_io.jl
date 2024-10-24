@@ -85,12 +85,18 @@ function import_spinsolve(files=pick_multi_file(pwd()))
 
         # Read experiment parameters
         acqu = readdlm(acqufile)
-        n_echoes = acqu[21, 3]
-        t_echo = acqu[12, 3] * 1e-6
-        τ_steps = acqu[36, 3]
-        τ_min = acqu[20, 3] * 1e-3
-        τ_max = acqu[19, 3] * 1e-3
-        experiment = acqu[13, 3]
+        #=n_echoes = acqu[21, 3]=#
+        #=t_echo = acqu[12, 3] * 1e-6=#
+        #=τ_steps = acqu[36, 3]=#
+        #=τ_min = acqu[20, 3] * 1e-3=#
+        #=τ_max = acqu[19, 3] * 1e-3=#
+        #=experiment = acqu[13, 3]=#
+
+        n_echoes = parse(Int32 ,read_acqu(acqufile, "nrEchoes"))
+        t_echo = parse(Float64, read_acqu(acqufile, "echoTime")) * 1e-6
+        τ_steps = parse(Int32, read_acqu(acqufile, "tauSteps"))
+        τ_min = parse(Float64, read_acqu(acqufile, "minTau")) * 1e-3
+        τ_max = parse(Float64, read_acqu(acqufile, "maxTau")) * 1e-3
 
         Raw = readdlm(datafile, ' ')
 
@@ -105,9 +111,11 @@ function import_spinsolve(files=pick_multi_file(pwd()))
         t_direct = collect(1:n_echoes) * t_echo
 
         # Time array in direct dimension
-        if acqu[18, 3] == "yes" # if log spacing is selected, do log array
+        if  read_acqu(acqufile, "logspace") == "yes" # if log spacing is selected, do log array
+
             t_indirect = exp10.(range(log10(τ_min), log10(τ_max), τ_steps))
         else                   # otherwise, do a linear array
+
             t_indirect = collect(range(τ_min, τ_max, τ_steps))
         end
 
